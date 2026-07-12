@@ -1,20 +1,21 @@
 # Gym CRM System
 
-A Spring Core-based module that handles a Gym CRM (Customer Relationship Management) system. It manages **Trainers**, **Trainees**, and **Trainings** using an in-memory storage implemented as Spring beans.
+A Spring Core-based module that handles a Gym CRM (Customer Relationship Management) system. It manages **Trainers**, **Trainees**, and **Trainings**, persisted with **Hibernate 6** on top of an H2 database.
 
 ---
 
 ## Features
 
-- **Trainee management** – create, update, delete, and select trainee profiles
-- **Trainer management** – create, update, and select trainer profiles
-- **Training management** – create and select trainings
+- **Trainee management** – create, update, delete, activate/deactivate, and select trainee profiles
+- **Trainer management** – create, update, activate/deactivate, and select trainer profiles
+- **Training management** – add trainings, search trainee/trainer trainings with optional date, trainer/trainee name, and training type filters
 - **Automatic username generation** – `firstName.lastName`, with a numeric suffix on duplicates (e.g. `John.Smith`, `John.Smith1`)
 - **Automatic password generation** – random 10-character string
-- **In-memory storage** – separate `Map` bean per entity type
-- **Data preloading** – storage is initialized from external CSV files at startup
+- **Authentication** – credential matching before every profile/training operation (except create)
+- **Persistence with Hibernate** – entities mapped with JPA annotations, managed via a `SessionFactory`-backed generic DAO layer
+- **Training type seeding** – default training types are seeded on startup if the table is empty
 - **Logging** – SLF4J + Logback with appropriate log levels
-- **Unit tested** – JUnit 5 + Mockito with JaCoCo coverage (>80%)
+- **Unit tested** – JUnit 5 + Mockito for services/facade, real Hibernate sessions against H2 for DAOs, with JaCoCo coverage (>90%)
 
 ---
 
@@ -23,7 +24,10 @@ A Spring Core-based module that handles a Gym CRM (Customer Relationship Managem
 | Component | Version |
 |-----------|---------|
 | Java | 17 |
-| Spring Context | 6.1.6 |
+| Spring Context / ORM / TX / JDBC | 6.1.6 |
+| Hibernate Core | 6.5.2.Final |
+| H2 Database | 2.2.224 |
+| HikariCP | 5.1.0 |
 | Lombok | 1.18.38 |
 | JUnit 5 | 5.10.2 |
 | Mockito | 5.11.0 |
@@ -35,35 +39,34 @@ A Spring Core-based module that handles a Gym CRM (Customer Relationship Managem
 
 ## Project Structure
 
-\`\`\`
+```
 gym-crm/
 ├── src/main/java/com/gym/crm/
 │   ├── Application.java              # Entry point
-│   ├── config/AppConfig.java         # Java-based Spring configuration
-│   ├── domain/                       # Trainee, Trainer, Training, User, TrainingType
-│   ├── storage/                      # InMemoryStorage + StorageInitializer (BeanPostProcessor)
-│   ├── dao/                          # TraineeDao, TrainerDao, TrainingDao
-│   ├── service/                      # TraineeService, TrainerService, TrainingService, UserProfileService
-│   └── facade/GymFacade.java         # Single entry point aggregating services
+│   ├── config/HibernateConfig.java   # DataSource, SessionFactory, TransactionManager
+│   ├── domain/                       # Trainee, Trainer, Training, TrainingType, User (JPA entities)
+│   ├── dao/                          # AbstractDao<T> + UserDao, TraineeDao, TrainerDao, TrainingDao, TrainingTypeDao
+│   ├── service/                      # TraineeService, TrainerService, TrainingService, UserProfileService, AuthenticationService
+│   ├── facade/GymFacade.java         # Single entry point aggregating services, authenticates before each call
+│   ├── init/TrainingTypeSeeder.java  # Seeds default training types on startup
+│   └── exception/                    # ValidationException, EntityNotFoundException, AuthenticationException
 ├── src/main/resources/
-│   ├── application.properties        # Externalized file paths
-│   ├── logback.xml                   # Logging configuration
-│   ├── trainees.csv                  # Preloaded trainee data
-│   ├── trainers.csv                  # Preloaded trainer data
-│   └── trainings.csv                 # Preloaded training data
-└── src/test/java/com/gym/crm/        # Unit tests
-\`\`\`
+│   ├── application.properties        # DB connection + Hibernate properties
+│   └── logback.xml                   # Logging configuration
+└── src/test/java/com/gym/crm/        # Unit tests (services/facade mocked, DAOs against real H2 sessions)
+```
 
 ---
 
 ## Architecture
 
-- **Configuration:** Java-based \`@Configuration\` with component scanning.
-- **Storage:** Each entity has its own \`Map\` Spring bean, grouped inside \`InMemoryStorage\`. Data is loaded from external CSV files by \`StorageInitializer\`, a \`BeanPostProcessor\`, using paths from property placeholders.
+- **Configuration:** Java-based `@Configuration` (`HibernateConfig`) with component scanning, `@EnableTransactionManagement`, and a `HikariDataSource` feeding a Hibernate `LocalSessionFactoryBean`.
+- **Persistence:** Entities are mapped with JPA annotations (`@Entity`, `@OneToOne`, `@ManyToMany`, `@OneToMany`) and managed through `AbstractDao<T>`, a generic base DAO built on `SessionFactory#getCurrentSession()`, providing `save`, `update`, `findById`, `findAll`, and `delete`. Entity-specific DAOs add HQL/Criteria queries (username lookups, filtered training search, unassigned-trainer lookup).
+- **Transactions:** Service methods run inside `@Transactional` boundaries (read-only where appropriate); Hibernate flushes and commits are handled by Spring's `HibernateTransactionManager`.
 - **Dependency Injection:**
-    - Services → \`GymFacade\` via **constructor** injection
-    - DAO/storage → services via **constructor** injection (\`@Autowired\`)
-    - Remaining dependencies (e.g. \`UserProfileService\`) via **setter** injection
+  - Services → `GymFacade` via **constructor** injection
+  - DAOs → services via **constructor** injection (`@Autowired`)
+  - Remaining dependencies (e.g. `UserProfileService`) via **setter** injection
 
 ---
 
@@ -75,88 +78,79 @@ gym-crm/
 
 ### Build
 
-\`\`\`bash
+```bash
 mvn clean install
-\`\`\`
+```
 
-This compiles the code, runs all tests, and generates a JaCoCo coverage report at \`target/site/jacoco/index.html\`.
+This compiles the code, runs all tests, and generates a JaCoCo coverage report at `target/site/jacoco/index.html`.
 
 ### Run
 
 **Option 1 – Maven exec plugin**
-\`\`\`bash
+```bash
 mvn exec:java -Dexec.mainClass="com.gym.crm.Application"
-\`\`\`
+```
 
 **Option 2 – From your IDE**
-Run \`com.gym.crm.Application\`.
-> **IntelliJ note:** If you see \`ExceptionInInitializerError / TypeTag :: UNKNOWN\`, enable annotation processing (Settings -> Build -> Compiler -> Annotation Processors) and do File -> Invalidate Caches / Restart.
+Run `com.gym.crm.Application`.
+> **IntelliJ note:** If you see `ExceptionInInitializerError / TypeTag :: UNKNOWN`, enable annotation processing (Settings -> Build -> Compiler -> Annotation Processors) and do File -> Invalidate Caches / Restart.
 
 ---
 
 ## Configuration
 
-Data file paths are configured in \`src/main/resources/application.properties\`:
+Database and Hibernate settings are configured in `src/main/resources/application.properties`:
 
-\`\`\`properties
-storage.trainees.file=trainees.csv
-storage.trainers.file=trainers.csv
-storage.trainings.file=trainings.csv
-\`\`\`
+```properties
+db.driver=org.h2.Driver
+db.url=jdbc:h2:file:./data/gymcrm;AUTO_SERVER=TRUE
+db.username=sa
+db.password=
 
-### Sample data format
+hibernate.hbm2ddl.auto=update
+hibernate.show_sql=true
+hibernate.format_sql=true
+```
 
-**trainees.csv**
-\`\`\`csv
-id,firstName,lastName,username,password,isActive,dateOfBirth,address
-1,Peter,Parker,Peter.Parker,abc1234567,true,1995-08-10,New York
-\`\`\`
-
-**trainers.csv**
-\`\`\`csv
-id,firstName,lastName,username,password,isActive,specialization
-1,Bruce,Wayne,Bruce.Wayne,pass111222,true,STRENGTH
-\`\`\`
-
-**trainings.csv**
-\`\`\`csv
-id,traineeId,trainerId,trainingName,trainingType,trainingDate,duration
-1,1,1,Morning Strength,STRENGTH,2024-01-15,60
-\`\`\`
+By default the app uses a file-based H2 database (`./data/gymcrm`), so data persists between runs. Swap `db.url`/`db.driver`/credentials to point at any other JDBC-compatible database if needed.
 
 ---
 
 ## Usage Example
 
-\`\`\`java
+```java
 GymFacade facade = context.getBean(GymFacade.class);
 
 Trainee trainee = new Trainee();
-trainee.setFirstName("John");
-trainee.setLastName("Smith");
+User user = new User();
+user.setFirstName("John");
+user.setLastName("Smith");
+trainee.setUser(user);
 trainee.setAddress("Baker Street 221B");
 
-Trainee saved = facade.createTrainee(trainee);
-// saved.getUsername() -> "John.Smith"
-// saved.getPassword() -> random 10-char string
-\`\`\`
+Trainee saved = facade.createTraineeProfile(trainee);
+// saved.getUser().getUsername() -> "John.Smith"
+// saved.getUser().getPassword() -> random 10-char string
+
+Trainee profile = facade.getTraineeProfile("John.Smith", saved.getUser().getPassword());
+```
 
 ---
 
 ## Testing
 
 Run all tests:
-\`\`\`bash
+```bash
 mvn test
-\`\`\`
+```
 
-- Unit tests cover services and DAOs using JUnit 5 + Mockito
+- Service and facade tests mock DAO dependencies with Mockito, covering validation, authentication checks, and username-collision handling
+- DAO tests run against a real in-memory H2 `SessionFactory` with transaction rollback after each test
 - Tests follow the **FIRST** principles (Fast, Isolated, Repeatable, Self-validating, Timely)
-- Line coverage exceeds **80%** (viewable in the JaCoCo report)
+- Line/branch coverage exceeds **90%** (viewable in the JaCoCo report)
 
 ---
 
 ## License
 
 This project is provided for educational purposes.
-EOF
