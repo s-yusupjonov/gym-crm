@@ -1,10 +1,17 @@
 package com.gym.crm.config;
 
-import com.gym.crm.domain.*;
-import org.springframework.context.annotation.*;
+import com.gym.crm.domain.Trainee;
+import com.gym.crm.domain.Trainer;
+import com.gym.crm.domain.Training;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+
 
 @Configuration
 @ComponentScan(basePackages = "com.gym.crm")

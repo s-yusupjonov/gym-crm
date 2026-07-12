@@ -1,12 +1,18 @@
 package com.gym.crm.facade;
 
-import com.gym.crm.domain.*;
-import com.gym.crm.service.*;
-import org.slf4j.*;
+import com.gym.crm.domain.Trainee;
+import com.gym.crm.domain.Trainer;
+import com.gym.crm.domain.Training;
+import com.gym.crm.service.TraineeService;
+import com.gym.crm.service.TrainerService;
+import com.gym.crm.service.TrainingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Optional;
+import java.util.List;
 
 @Component
 public class GymFacade {

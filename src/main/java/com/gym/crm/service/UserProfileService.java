@@ -1,12 +1,15 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.*;
-import org.slf4j.*;
+import com.gym.crm.dao.TraineeDao;
+import com.gym.crm.dao.TrainerDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class UserProfileService {

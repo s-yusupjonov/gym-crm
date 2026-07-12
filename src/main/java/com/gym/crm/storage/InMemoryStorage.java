@@ -1,6 +1,8 @@
 package com.gym.crm.storage;
 
-import com.gym.crm.domain.*;
+import com.gym.crm.domain.Trainee;
+import com.gym.crm.domain.Trainer;
+import com.gym.crm.domain.Training;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 

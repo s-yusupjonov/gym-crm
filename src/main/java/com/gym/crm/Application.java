@@ -1,9 +1,11 @@
 package com.gym.crm;
 
 import com.gym.crm.config.AppConfig;
-import com.gym.crm.domain.*;
+import com.gym.crm.domain.Trainee;
+import com.gym.crm.domain.Trainer;
 import com.gym.crm.facade.GymFacade;
-import org.slf4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class Application {
