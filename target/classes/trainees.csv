@@ -1,0 +1,3 @@
+id,firstName,lastName,username,password,isActive,dateOfBirth,address
+1,Peter,Parker,Peter.Parker,abc1234567,true,1995-08-10,New York
+2,Mary,Watson,Mary.Watson,xyz9876543,true,1996-05-22,Queens

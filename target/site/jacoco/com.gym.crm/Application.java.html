@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Application.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gym-crm</a> &gt; <a href="index.source.html" class="el_package">com.gym.crm</a> &gt; <span class="el_source">Application.java</span></div><h1>Application.java</h1><pre class="source lang-java linenums">package com.gym.crm;
+import com.gym.crm.config.AppConfig;
+import com.gym.crm.domain.*;
+import com.gym.crm.facade.GymFacade;
+import org.slf4j.*;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+<span class="nc" id="L7">public class Application {</span>
+<span class="nc" id="L8">    private static final Logger log = LoggerFactory.getLogger(Application.class);</span>
+    public static void main(String[] args) {
+<span class="nc" id="L10">        try (var context = new AnnotationConfigApplicationContext(AppConfig.class)) {</span>
+<span class="nc" id="L11">            GymFacade facade = context.getBean(GymFacade.class);</span>
+<span class="nc" id="L12">            Trainee trainee = new Trainee();</span>
+<span class="nc" id="L13">            trainee.setFirstName(&quot;John&quot;); trainee.setLastName(&quot;Smith&quot;); trainee.setAddress(&quot;Baker Street 221B&quot;);</span>
+<span class="nc" id="L14">            Trainee saved = facade.createTrainee(trainee);</span>
+<span class="nc" id="L15">            log.info(&quot;New trainee -&gt; username={}, password={}&quot;, saved.getUsername(), saved.getPassword());</span>
+<span class="nc" id="L16">            Trainer trainer = new Trainer();</span>
+<span class="nc" id="L17">            trainer.setFirstName(&quot;Anna&quot;); trainer.setLastName(&quot;Jones&quot;); trainer.setSpecialization(&quot;Cardio&quot;);</span>
+<span class="nc" id="L18">            Trainer st = facade.createTrainer(trainer);</span>
+<span class="nc" id="L19">            log.info(&quot;New trainer -&gt; username={}&quot;, st.getUsername());</span>
+<span class="nc" id="L20">            log.info(&quot;Total trainees: {}&quot;, facade.getAllTrainees().size());</span>
+<span class="nc" id="L21">            log.info(&quot;Total trainers: {}&quot;, facade.getAllTrainers().size());</span>
+<span class="nc" id="L22">            log.info(&quot;Total trainings: {}&quot;, facade.getAllTrainings().size());</span>
+        }
+<span class="nc" id="L24">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
