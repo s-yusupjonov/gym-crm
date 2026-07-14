@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gym-crm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gymcrm
+      POSTGRES_USER: gymcrm
+      POSTGRES_PASSWORD: gymcrm
+    ports:
+      - "5433:5432"
+    volumes:
+      - gym-crm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gymcrm -d gymcrm"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  gym-crm-pgdata:

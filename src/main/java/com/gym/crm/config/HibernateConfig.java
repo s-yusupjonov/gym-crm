@@ -34,6 +34,9 @@ public class HibernateConfig {
     @Value("${db.password}")
     private String password;
 
+    @Value("${hibernate.dialect}")
+    private String dialect;
+
     @Value("${hibernate.hbm2ddl.auto}")
     private String hbm2ddl;
 
@@ -74,6 +77,7 @@ public class HibernateConfig {
 
     private Properties hibernateProperties() {
         Properties props = new Properties();
+        props.put("hibernate.dialect", dialect);
         props.put("hibernate.hbm2ddl.auto", hbm2ddl);
         props.put("hibernate.show_sql", showSql);
         props.put("hibernate.format_sql", formatSql);
