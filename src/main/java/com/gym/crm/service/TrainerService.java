@@ -1,7 +1,9 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainerDao;
+import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Trainer;
+import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
@@ -20,6 +22,7 @@ public class TrainerService {
 
     private final TrainerDao trainerDao;
     private UserProfileService userProfileService;
+    private TrainingTypeDao trainingTypeDao;
 
     @Autowired
     public TrainerService(TrainerDao trainerDao) {
@@ -29,6 +32,11 @@ public class TrainerService {
     @Autowired
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+
+    @Autowired
+    public void setTrainingTypeDao(TrainingTypeDao trainingTypeDao) {
+        this.trainingTypeDao = trainingTypeDao;
     }
 
     @Transactional
@@ -54,10 +62,20 @@ public class TrainerService {
         existing.getUser().setFirstName(updates.getUser().getFirstName());
         existing.getUser().setLastName(updates.getUser().getLastName());
         existing.setSpecialization(updates.getSpecialization());
+        existing.getUser().setActive(updates.getUser().isActive());
 
         log.info("Updated trainer profile: username={}", username);
 
         return existing;
+    }
+
+    @Transactional(readOnly = true)
+    public TrainingType getSpecializationById(Long trainingTypeId) {
+        if (trainingTypeId == null) {
+            throw new ValidationException("Specialization is required");
+        }
+        return trainingTypeDao.findById(trainingTypeId)
+                .orElseThrow(() -> new ValidationException("Invalid specialization id: " + trainingTypeId));
     }
 
     @Transactional

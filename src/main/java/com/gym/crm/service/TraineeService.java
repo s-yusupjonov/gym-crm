@@ -62,6 +62,7 @@ public class TraineeService {
         existing.getUser().setLastName(updates.getUser().getLastName());
         existing.setDateOfBirth(updates.getDateOfBirth());
         existing.setAddress(updates.getAddress());
+        existing.getUser().setActive(updates.getUser().isActive());
 
         log.info("Updated trainee profile: username={}", username);
 
