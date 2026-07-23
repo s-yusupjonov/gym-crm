@@ -1,29 +1,165 @@
 package com.gym.crm.service;
+
 import com.gym.crm.dao.TrainingDao;
-import com.gym.crm.domain.*;
-import org.junit.jupiter.api.*;
+import com.gym.crm.dao.TrainingTypeDao;
+import com.gym.crm.domain.Trainee;
+import com.gym.crm.domain.Trainer;
+import com.gym.crm.domain.Training;
+import com.gym.crm.domain.TrainingType;
+import com.gym.crm.exception.ValidationException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.time.LocalDate;
-import java.util.Optional;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class TrainingServiceTest {
-    @Mock private TrainingDao trainingDao;
-    private TrainingService service;
-    @BeforeEach void setUp() { service = new TrainingService(trainingDao); }
-    @Test void shouldCreateTraining() {
-        Training training = new Training(null,1L,2L,"Session",TrainingType.CARDIO,LocalDate.now(),60);
-        when(trainingDao.create(any(Training.class))).thenAnswer(i -> i.getArgument(0));
-        Training r = service.create(training);
-        assertEquals("Session", r.getTrainingName());
+
+    @Mock
+    private TrainingDao trainingDao;
+
+    @Mock
+    private TrainingTypeDao trainingTypeDao;
+
+    private TrainingService trainingService;
+
+    @BeforeEach
+    void setUp() {
+        trainingService = new TrainingService(trainingDao, trainingTypeDao);
     }
-    @Test void shouldSelectTraining() {
-        Training t = new Training(); t.setTrainingId(1L);
-        when(trainingDao.findById(1L)).thenReturn(Optional.of(t));
-        assertTrue(service.select(1L).isPresent());
+
+    private Training validTraining() {
+        Trainee trainee = new Trainee();
+        trainee.setId(1L);
+        Trainer trainer = new Trainer();
+        trainer.setId(2L);
+
+        Training training = new Training();
+        training.setTrainee(trainee);
+        training.setTrainer(trainer);
+        training.setTrainingName("Morning Session");
+        training.setTrainingType(new TrainingType());
+        training.setTrainingDate(LocalDate.of(2026, 1, 1));
+        training.setTrainingDuration(60);
+        return training;
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenTraineeIsNull() {
+        Training training = validTraining();
+        training.setTrainee(null);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenTrainerIsNull() {
+        Training training = validTraining();
+        training.setTrainer(null);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenTrainingNameIsNull() {
+        Training training = validTraining();
+        training.setTrainingName(null);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenTrainingNameIsBlank() {
+        Training training = validTraining();
+        training.setTrainingName("   ");
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenTrainingTypeIsNull() {
+        Training training = validTraining();
+        training.setTrainingType(null);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenTrainingDateIsNull() {
+        Training training = validTraining();
+        training.setTrainingDate(null);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenDurationIsZero() {
+        Training training = validTraining();
+        training.setTrainingDuration(0);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldThrowWhenDurationIsNegative() {
+        Training training = validTraining();
+        training.setTrainingDuration(-5);
+
+        assertThrows(ValidationException.class, () -> trainingService.addTraining(training));
+    }
+
+    @Test
+    void addTrainingShouldSaveWhenValid() {
+        Training training = validTraining();
+        when(trainingDao.save(training)).thenReturn(training);
+
+        Training saved = trainingService.addTraining(training);
+
+        assertEquals(training, saved);
+        verify(trainingDao).save(training);
+    }
+
+    @Test
+    void getTraineeTrainingsShouldDelegateToDao() {
+        LocalDate from = LocalDate.of(2026, 1, 1);
+        LocalDate to = LocalDate.of(2026, 2, 1);
+        List<Training> trainings = List.of(validTraining());
+        when(trainingDao.findTraineeTrainings("john.doe", from, to, "trainerName", "CARDIO"))
+                .thenReturn(trainings);
+
+        List<Training> result = trainingService.getTraineeTrainings(
+                "john.doe", from, to, "trainerName", "CARDIO");
+
+        assertEquals(trainings, result);
+    }
+
+    @Test
+    void getTrainerTrainingsShouldDelegateToDao() {
+        LocalDate from = LocalDate.of(2026, 1, 1);
+        LocalDate to = LocalDate.of(2026, 2, 1);
+        List<Training> trainings = List.of(validTraining());
+        when(trainingDao.findTrainerTrainings("carl.coach", from, to, "traineeName"))
+                .thenReturn(trainings);
+
+        List<Training> result = trainingService.getTrainerTrainings("carl.coach", from, to, "traineeName");
+
+        assertEquals(trainings, result);
+    }
+
+    @Test
+    void getTrainingTypesShouldDelegateToDao() {
+        List<TrainingType> types = List.of(new TrainingType());
+        when(trainingTypeDao.findAll()).thenReturn(types);
+
+        assertEquals(types, trainingService.getTrainingTypes());
     }
 }

@@ -1,52 +1,42 @@
 package com.gym.crm.dao;
 
 import com.gym.crm.domain.Trainer;
-import com.gym.crm.storage.InMemoryStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
 
 @Repository
-public class TrainerDao {
-
-    private static final Logger log = LoggerFactory.getLogger(TrainerDao.class);
-
-    private final InMemoryStorage storage;
-    private final AtomicLong idSequence = new AtomicLong(2000);
+public class TrainerDao extends AbstractDao<Trainer> {
 
     @Autowired
-    public TrainerDao(InMemoryStorage storage) {
-        this.storage = storage;
+    public TrainerDao(SessionFactory sessionFactory) {
+        super(sessionFactory, Trainer.class);
     }
 
-    public Trainer create(Trainer t) {
-        long id = idSequence.incrementAndGet();
-        t.setTrainerId(id);
-        t.setUserId(id);
-
-        storage.getTrainerStorage().put(id, t);
-        log.debug("Created trainer with id={}", id);
-
-        return t;
+    public Optional<Trainer> findByUsername(String username) {
+        return currentSession()
+                .createQuery("select t from Trainer t join fetch t.user u where u.username = :username", Trainer.class)
+                .setParameter("username", username)
+                .uniqueResultOptional();
     }
 
-    public Trainer update(Trainer t) {
-        storage.getTrainerStorage().put(t.getTrainerId(), t);
-        log.debug("Updated trainer with id={}", t.getTrainerId());
-
-        return t;
+    public List<Trainer> findByUsernames(List<String> usernames) {
+        return currentSession()
+                .createQuery("select t from Trainer t join fetch t.user u where u.username in :usernames", Trainer.class)
+                .setParameter("usernames", usernames)
+                .list();
     }
 
-    public Optional<Trainer> findById(Long id) {
-        return Optional.ofNullable(storage.getTrainerStorage().get(id));
-    }
-
-    public List<Trainer> findAll() {
-        return List.copyOf(storage.getTrainerStorage().values());
+    public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
+        return currentSession()
+                .createQuery(
+                        "select t from Trainer t join fetch t.user u where t not in "
+                                + "(select tr from Trainee tn join tn.trainers tr join tn.user tu where tu.username = :username)",
+                        Trainer.class)
+                .setParameter("username", traineeUsername)
+                .list();
     }
 }
