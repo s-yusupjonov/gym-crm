@@ -3,7 +3,13 @@ package com.gym.crm.dto.trainer;
 import io.swagger.annotations.ApiModelProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class UpdateTrainerRequest {
 
     @NotBlank(message = "First name is required")
@@ -17,28 +23,4 @@ public class UpdateTrainerRequest {
     @NotNull(message = "isActive is required")
     @ApiModelProperty(value = "Active status", required = true, example = "true")
     private Boolean active;
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
 }

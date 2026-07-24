@@ -1,7 +1,6 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.UserDao;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +15,6 @@ public class UserProfileService {
     private final SecureRandom random = new SecureRandom();
     private final UserDao userDao;
 
-    @Autowired
     public UserProfileService(UserDao userDao) {
         this.userDao = userDao;
     }

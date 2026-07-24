@@ -14,10 +14,6 @@ public final class TrainingMapper {
     private TrainingMapper() {
     }
 
-    /**
-     * Builds a new Training from the request. The training type is not part of the request body -
-     * it is derived from the assigned trainer's specialization.
-     */
     public static Training toEntity(AddTrainingRequest request, Trainee trainee, Trainer trainer) {
         Training training = new Training();
         training.setTrainee(trainee);

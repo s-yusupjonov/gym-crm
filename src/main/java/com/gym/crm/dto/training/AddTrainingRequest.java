@@ -4,9 +4,15 @@ import io.swagger.annotations.ApiModelProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class AddTrainingRequest {
 
     @NotBlank(message = "Trainee username is required")
@@ -29,44 +35,4 @@ public class AddTrainingRequest {
     @Positive(message = "Training duration must be a positive number")
     @ApiModelProperty(value = "Training duration in minutes", required = true, example = "60")
     private Integer trainingDuration;
-
-    public String getTraineeUsername() {
-        return traineeUsername;
-    }
-
-    public void setTraineeUsername(String traineeUsername) {
-        this.traineeUsername = traineeUsername;
-    }
-
-    public String getTrainerUsername() {
-        return trainerUsername;
-    }
-
-    public void setTrainerUsername(String trainerUsername) {
-        this.trainerUsername = trainerUsername;
-    }
-
-    public String getTrainingName() {
-        return trainingName;
-    }
-
-    public void setTrainingName(String trainingName) {
-        this.trainingName = trainingName;
-    }
-
-    public LocalDate getTrainingDate() {
-        return trainingDate;
-    }
-
-    public void setTrainingDate(LocalDate trainingDate) {
-        this.trainingDate = trainingDate;
-    }
-
-    public Integer getTrainingDuration() {
-        return trainingDuration;
-    }
-
-    public void setTrainingDuration(Integer trainingDuration) {
-        this.trainingDuration = trainingDuration;
-    }
 }

@@ -23,9 +23,6 @@ public final class TrainerMapper {
         return trainer;
     }
 
-    /**
-     * Specialization is read-only on update, so the current specialization is always carried over unchanged.
-     */
     public static Trainer toEntity(UpdateTrainerRequest request, TrainingType currentSpecialization) {
         User user = new User();
         user.setFirstName(request.getFirstName());
@@ -38,9 +35,6 @@ public final class TrainerMapper {
         return trainer;
     }
 
-    /**
-     * Maps to the "Get Trainer Profile" response shape - username is left unset (omitted from JSON).
-     */
     public static TrainerProfileResponse toProfileResponse(Trainer trainer) {
         TrainerProfileResponse response = new TrainerProfileResponse();
         response.setFirstName(trainer.getUser().getFirstName());
@@ -51,9 +45,6 @@ public final class TrainerMapper {
         return response;
     }
 
-    /**
-     * Maps to the "Update Trainer Profile" response shape - includes the (immutable) username.
-     */
     public static TrainerProfileResponse toUpdateResponse(Trainer trainer) {
         TrainerProfileResponse response = toProfileResponse(trainer);
         response.setUsername(trainer.getUser().getUsername());

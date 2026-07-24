@@ -4,9 +4,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.gym.crm.dto.common.TraineeShortDto;
 import com.gym.crm.dto.common.TrainingTypeDto;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrainerProfileResponse {
 
@@ -27,52 +33,4 @@ public class TrainerProfileResponse {
 
     @ApiModelProperty(value = "Assigned trainees")
     private List<TraineeShortDto> trainees;
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public TrainingTypeDto getSpecialization() {
-        return specialization;
-    }
-
-    public void setSpecialization(TrainingTypeDto specialization) {
-        this.specialization = specialization;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    public List<TraineeShortDto> getTrainees() {
-        return trainees;
-    }
-
-    public void setTrainees(List<TraineeShortDto> trainees) {
-        this.trainees = trainees;
-    }
 }

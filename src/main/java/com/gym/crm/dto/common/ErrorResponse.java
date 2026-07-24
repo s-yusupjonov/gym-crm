@@ -1,10 +1,12 @@
 package com.gym.crm.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
 
@@ -31,34 +33,7 @@ public class ErrorResponse {
         this.fieldErrors = fieldErrors;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public List<FieldError> getFieldErrors() {
-        return fieldErrors;
-    }
-
+    @Getter
     public static class FieldError {
         private final String field;
         private final String message;
@@ -66,14 +41,6 @@ public class ErrorResponse {
         public FieldError(String field, String message) {
             this.field = field;
             this.message = message;
-        }
-
-        public String getField() {
-            return field;
-        }
-
-        public String getMessage() {
-            return message;
         }
     }
 }

@@ -36,9 +36,6 @@ public final class TraineeMapper {
         return trainee;
     }
 
-    /**
-     * Maps to the "Get Trainee Profile" response shape - username is left unset (omitted from JSON).
-     */
     public static TraineeProfileResponse toProfileResponse(Trainee trainee) {
         TraineeProfileResponse response = new TraineeProfileResponse();
         response.setFirstName(trainee.getUser().getFirstName());
@@ -50,9 +47,6 @@ public final class TraineeMapper {
         return response;
     }
 
-    /**
-     * Maps to the "Update Trainee Profile" response shape - includes the (immutable) username.
-     */
     public static TraineeProfileResponse toUpdateResponse(Trainee trainee) {
         TraineeProfileResponse response = toProfileResponse(trainee);
         response.setUsername(trainee.getUser().getUsername());

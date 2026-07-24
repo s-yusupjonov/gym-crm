@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -69,15 +71,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, message, request, ex);
     }
 
-    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadableBody(
-            org.springframework.http.converter.HttpMessageNotReadableException ex, HttpServletRequest request) {
+            HttpMessageNotReadableException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "Malformed request body", request, ex);
     }
 
-    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(
-            org.springframework.web.HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+            HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
         return build(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage(), request, ex);
     }
 

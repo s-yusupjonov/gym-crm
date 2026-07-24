@@ -1,6 +1,7 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainerDao;
+import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
@@ -29,12 +30,14 @@ class TrainerServiceTest {
     @Mock
     private UserProfileService userProfileService;
 
+    @Mock
+    private TrainingTypeDao trainingTypeDao;
+
     private TrainerService trainerService;
 
     @BeforeEach
     void setUp() {
-        trainerService = new TrainerService(trainerDao);
-        trainerService.setUserProfileService(userProfileService);
+        trainerService = new TrainerService(trainerDao, userProfileService, trainingTypeDao);
     }
 
     private Trainer trainerWithUser(String firstName, String lastName, TrainingType specialization) {

@@ -38,8 +38,7 @@ class TraineeServiceTest {
 
     @BeforeEach
     void setUp() {
-        traineeService = new TraineeService(traineeDao, trainerDao);
-        traineeService.setUserProfileService(userProfileService);
+        traineeService = new TraineeService(traineeDao, trainerDao, userProfileService);
     }
 
     private Trainee traineeWithUser(String firstName, String lastName) {

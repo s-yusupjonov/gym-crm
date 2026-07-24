@@ -2,7 +2,15 @@ package com.gym.crm.dto.auth;
 
 import io.swagger.annotations.ApiModelProperty;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChangeLoginRequest {
 
     @NotBlank(message = "Username is required")
@@ -16,37 +24,4 @@ public class ChangeLoginRequest {
     @NotBlank(message = "New password is required")
     @ApiModelProperty(value = "New password to set", required = true)
     private String newPassword;
-
-    public ChangeLoginRequest() {
-    }
-
-    public ChangeLoginRequest(String username, String oldPassword, String newPassword) {
-        this.username = username;
-        this.oldPassword = oldPassword;
-        this.newPassword = newPassword;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getOldPassword() {
-        return oldPassword;
-    }
-
-    public void setOldPassword(String oldPassword) {
-        this.oldPassword = oldPassword;
-    }
-
-    public String getNewPassword() {
-        return newPassword;
-    }
-
-    public void setNewPassword(String newPassword) {
-        this.newPassword = newPassword;
-    }
 }

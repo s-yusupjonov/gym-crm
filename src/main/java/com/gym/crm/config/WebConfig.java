@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.gym.crm.logging.RestLoggingInterceptor;
+import com.gym.crm.security.AuthenticationInterceptor;
+import com.gym.crm.service.AuthenticationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -23,14 +25,27 @@ import java.util.List;
 public class WebConfig implements WebMvcConfigurer {
 
     private final RestLoggingInterceptor restLoggingInterceptor;
+    private final AuthenticationInterceptor authenticationInterceptor;
 
-    public WebConfig(RestLoggingInterceptor restLoggingInterceptor) {
+    public WebConfig(RestLoggingInterceptor restLoggingInterceptor, AuthenticationInterceptor authenticationInterceptor) {
         this.restLoggingInterceptor = restLoggingInterceptor;
+        this.authenticationInterceptor = authenticationInterceptor;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // Logging runs first so failed-auth attempts are still logged in RestLoggingInterceptor#afterCompletion.
         registry.addInterceptor(restLoggingInterceptor).addPathPatterns("/**");
+
+        // Enforces credential checks on every endpoint except registration; /api/login authenticates itself.
+        registry.addInterceptor(authenticationInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/login");
+    }
+
+    @Bean
+    public AuthenticationInterceptor authenticationInterceptor(AuthenticationService authenticationService) {
+        return new AuthenticationInterceptor(authenticationService);
     }
 
     @Override
@@ -61,5 +76,10 @@ public class WebConfig implements WebMvcConfigurer {
         MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
         processor.setValidator(mvcValidator());
         return processor;
+    }
+
+    @Bean
+    public RestLoggingInterceptor restLoggingInterceptor() {
+        return new RestLoggingInterceptor();
     }
 }

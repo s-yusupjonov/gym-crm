@@ -1,7 +1,15 @@
 package com.gym.crm.dto.common;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RegistrationResponse {
 
     @ApiModelProperty(value = "Generated username", example = "john.doe")
@@ -9,28 +17,4 @@ public class RegistrationResponse {
 
     @ApiModelProperty(value = "Generated password")
     private String password;
-
-    public RegistrationResponse() {
-    }
-
-    public RegistrationResponse(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

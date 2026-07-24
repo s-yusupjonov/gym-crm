@@ -6,7 +6,6 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -16,7 +15,6 @@ import java.util.List;
 @Repository
 public class TrainingDao extends AbstractDao<Training> {
 
-    @Autowired
     public TrainingDao(SessionFactory sessionFactory) {
         super(sessionFactory, Training.class);
     }

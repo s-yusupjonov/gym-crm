@@ -2,7 +2,6 @@ package com.gym.crm.dao;
 
 import com.gym.crm.domain.Trainee;
 import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -10,7 +9,6 @@ import java.util.Optional;
 @Repository
 public class TraineeDao extends AbstractDao<Trainee> {
 
-    @Autowired
     public TraineeDao(SessionFactory sessionFactory) {
         super(sessionFactory, Trainee.class);
     }

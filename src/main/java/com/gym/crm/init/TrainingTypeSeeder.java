@@ -7,7 +7,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,7 +21,6 @@ public class TrainingTypeSeeder {
 
     private final SessionFactory sessionFactory;
 
-    @Autowired
     public TrainingTypeSeeder(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }

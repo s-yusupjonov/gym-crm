@@ -4,9 +4,15 @@ import io.swagger.annotations.ApiModelProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class UpdateTraineeTrainersRequest {
 
     @NotEmpty(message = "Trainers list must not be empty")
@@ -14,26 +20,13 @@ public class UpdateTraineeTrainersRequest {
     @ApiModelProperty(value = "New full list of trainers assigned to the trainee", required = true)
     private List<TrainerUsername> trainers;
 
-    public List<TrainerUsername> getTrainers() {
-        return trainers;
-    }
-
-    public void setTrainers(List<TrainerUsername> trainers) {
-        this.trainers = trainers;
-    }
-
+    @Getter
+    @Setter
+    @NoArgsConstructor
     public static class TrainerUsername {
 
         @NotBlank(message = "Trainer username is required")
         @ApiModelProperty(value = "Trainer username", required = true, example = "carl.coach")
         private String trainerUsername;
-
-        public String getTrainerUsername() {
-            return trainerUsername;
-        }
-
-        public void setTrainerUsername(String trainerUsername) {
-            this.trainerUsername = trainerUsername;
-        }
     }
 }

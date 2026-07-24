@@ -3,15 +3,16 @@ package com.gym.crm.dto.trainee;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.gym.crm.dto.common.TrainerShortDto;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Response body for both "Get Trainee Profile" and "Update Trainee Profile".
- * Per the spec, only the update response includes the username - {@code username}
- * is left null (and therefore omitted from the JSON) for the get-profile case.
- */
+@Getter
+@Setter
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TraineeProfileResponse {
 
@@ -35,60 +36,4 @@ public class TraineeProfileResponse {
 
     @ApiModelProperty(value = "Assigned trainers")
     private List<TrainerShortDto> trainers;
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    public List<TrainerShortDto> getTrainers() {
-        return trainers;
-    }
-
-    public void setTrainers(List<TrainerShortDto> trainers) {
-        this.trainers = trainers;
-    }
 }
