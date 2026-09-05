@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.gym.crm.logging.RestLoggingInterceptor;
 import com.gym.crm.security.AuthenticationInterceptor;
-import com.gym.crm.service.AuthenticationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -21,7 +21,8 @@ import java.util.List;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan(basePackages = "com.gym.crm.controller")
+@ComponentScan(basePackages = {"com.gym.crm.controller", "com.gym.crm.exception"})
+@Import(InterceptorConfig.class)
 public class WebConfig implements WebMvcConfigurer {
 
     private final RestLoggingInterceptor restLoggingInterceptor;
@@ -41,11 +42,6 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(authenticationInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/login");
-    }
-
-    @Bean
-    public AuthenticationInterceptor authenticationInterceptor(AuthenticationService authenticationService) {
-        return new AuthenticationInterceptor(authenticationService);
     }
 
     @Override
@@ -76,10 +72,5 @@ public class WebConfig implements WebMvcConfigurer {
         MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
         processor.setValidator(mvcValidator());
         return processor;
-    }
-
-    @Bean
-    public RestLoggingInterceptor restLoggingInterceptor() {
-        return new RestLoggingInterceptor();
     }
 }

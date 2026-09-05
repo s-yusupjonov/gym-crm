@@ -17,5 +17,25 @@ services:
       timeout: 3s
       retries: 10
 
+  app:
+    build: .
+    container_name: gym-crm-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Overrides application.properties' db.url (which assumes Tomcat runs on the host,
+      # talking to Postgres via the 5433 host-mapped port). Inside the Docker network,
+      # Postgres is reachable at its service name "postgres" on its internal port 5432.
+      # Spring's PropertySourcesPlaceholderConfigurer resolves system properties before
+      # the classpath properties file, so -D flags here win without touching any Java code.
+      JAVA_OPTS: >-
+        -Ddb.url=jdbc:postgresql://postgres:5432/gymcrm
+        -Ddb.username=gymcrm
+        -Ddb.password=gymcrm
+    ports:
+      - "8080:8080"
+
 volumes:
   gym-crm-pgdata:

@@ -10,7 +10,8 @@ import org.springframework.context.annotation.Import;
         "com.gym.crm.dao",
         "com.gym.crm.service",
         "com.gym.crm.mapper",
-        "com.gym.crm.util"
+        "com.gym.crm.util",
+        "com.gym.crm.init"
 })
 public class RootConfig {
 }

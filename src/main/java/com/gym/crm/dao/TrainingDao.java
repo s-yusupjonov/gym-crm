@@ -1,8 +1,12 @@
 package com.gym.crm.dao;
 
+import com.gym.crm.domain.Trainee;
+import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.Training;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.hibernate.SessionFactory;
@@ -25,8 +29,17 @@ public class TrainingDao extends AbstractDao<Training> {
         CriteriaQuery<Training> query = cb.createQuery(Training.class);
         Root<Training> root = query.from(Training.class);
 
+        Fetch<Training, Trainee> traineeFetch = root.fetch("trainee");
+        Join<?, ?> traineeUserJoin = (Join<?, ?>) traineeFetch.fetch("user");
+
+        Fetch<Training, Trainer> trainerFetch = root.fetch("trainer");
+        Join<?, ?> trainerUserJoin = (Join<?, ?>) trainerFetch.fetch("user");
+
+        Fetch<Training, ?> trainingTypeFetch = root.fetch("trainingType");
+        Join<?, ?> trainingTypeJoin = (Join<?, ?>) trainingTypeFetch;
+
         List<Predicate> predicates = new ArrayList<>();
-        predicates.add(cb.equal(root.get("trainee").get("user").get("username"), traineeUsername));
+        predicates.add(cb.equal(traineeUserJoin.get("username"), traineeUsername));
 
         if (fromDate != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("trainingDate"), fromDate));
@@ -37,14 +50,14 @@ public class TrainingDao extends AbstractDao<Training> {
         if (trainerName != null && !trainerName.isBlank()) {
             String pattern = "%" + trainerName + "%";
             predicates.add(cb.or(
-                    cb.like(root.get("trainer").get("user").get("firstName"), pattern),
-                    cb.like(root.get("trainer").get("user").get("lastName"), pattern)));
+                    cb.like(trainerUserJoin.get("firstName"), pattern),
+                    cb.like(trainerUserJoin.get("lastName"), pattern)));
         }
         if (trainingTypeName != null && !trainingTypeName.isBlank()) {
-            predicates.add(cb.equal(root.get("trainingType").get("trainingTypeName"), trainingTypeName));
+            predicates.add(cb.equal(trainingTypeJoin.get("trainingTypeName"), trainingTypeName));
         }
 
-        query.select(root).where(predicates.toArray(new Predicate[0]));
+        query.select(root).distinct(true).where(predicates.toArray(new Predicate[0]));
 
         return currentSession().createQuery(query).list();
     }
@@ -55,8 +68,16 @@ public class TrainingDao extends AbstractDao<Training> {
         CriteriaQuery<Training> query = cb.createQuery(Training.class);
         Root<Training> root = query.from(Training.class);
 
+        Fetch<Training, Trainee> traineeFetch = root.fetch("trainee");
+        Join<?, ?> traineeUserJoin = (Join<?, ?>) traineeFetch.fetch("user");
+
+        Fetch<Training, Trainer> trainerFetch = root.fetch("trainer");
+        Join<?, ?> trainerUserJoin = (Join<?, ?>) trainerFetch.fetch("user");
+
+        root.fetch("trainingType");
+
         List<Predicate> predicates = new ArrayList<>();
-        predicates.add(cb.equal(root.get("trainer").get("user").get("username"), trainerUsername));
+        predicates.add(cb.equal(trainerUserJoin.get("username"), trainerUsername));
 
         if (fromDate != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("trainingDate"), fromDate));
@@ -67,11 +88,11 @@ public class TrainingDao extends AbstractDao<Training> {
         if (traineeName != null && !traineeName.isBlank()) {
             String pattern = "%" + traineeName + "%";
             predicates.add(cb.or(
-                    cb.like(root.get("trainee").get("user").get("firstName"), pattern),
-                    cb.like(root.get("trainee").get("user").get("lastName"), pattern)));
+                    cb.like(traineeUserJoin.get("firstName"), pattern),
+                    cb.like(traineeUserJoin.get("lastName"), pattern)));
         }
 
-        query.select(root).where(predicates.toArray(new Predicate[0]));
+        query.select(root).distinct(true).where(predicates.toArray(new Predicate[0]));
 
         return currentSession().createQuery(query).list();
     }
