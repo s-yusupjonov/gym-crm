@@ -18,10 +18,6 @@ public class ErrorResponse {
     private final String transactionId;
     private final List<FieldError> fieldErrors;
 
-    public ErrorResponse(int status, String error, String message, String path, String transactionId) {
-        this(status, error, message, path, transactionId, null);
-    }
-
     public ErrorResponse(int status, String error, String message, String path, String transactionId,
                          List<FieldError> fieldErrors) {
         this.timestamp = LocalDateTime.now();
