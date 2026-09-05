@@ -5,9 +5,9 @@ import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +22,6 @@ public class TrainingService {
     private final TrainingDao trainingDao;
     private final TrainingTypeDao trainingTypeDao;
 
-    @Autowired
     public TrainingService(TrainingDao trainingDao, TrainingTypeDao trainingTypeDao) {
         this.trainingDao = trainingDao;
         this.trainingTypeDao = trainingTypeDao;
@@ -63,7 +62,7 @@ public class TrainingService {
         if (training.getTrainer() == null) {
             throw new ValidationException("Trainer is required");
         }
-        if (training.getTrainingName() == null || training.getTrainingName().isBlank()) {
+        if (ValidationUtils.isBlank(training.getTrainingName())) {
             throw new ValidationException("Training name is required");
         }
         if (training.getTrainingType() == null) {

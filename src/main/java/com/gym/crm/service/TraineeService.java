@@ -7,9 +7,9 @@ import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,16 +25,11 @@ public class TraineeService {
 
     private final TraineeDao traineeDao;
     private final TrainerDao trainerDao;
-    private UserProfileService userProfileService;
+    private final UserProfileService userProfileService;
 
-    @Autowired
-    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao) {
+    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao, UserProfileService userProfileService) {
         this.traineeDao = traineeDao;
         this.trainerDao = trainerDao;
-    }
-
-    @Autowired
-    public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
 
@@ -62,6 +57,7 @@ public class TraineeService {
         existing.getUser().setLastName(updates.getUser().getLastName());
         existing.setDateOfBirth(updates.getDateOfBirth());
         existing.setAddress(updates.getAddress());
+        existing.getUser().setActive(updates.getUser().isActive());
 
         log.info("Updated trainee profile: username={}", username);
 
@@ -70,9 +66,7 @@ public class TraineeService {
 
     @Transactional
     public void changePassword(String username, String newPassword) {
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new ValidationException("New password must not be blank");
-        }
+        ValidationUtils.requireNonBlank(newPassword, "New password must not be blank");
 
         Trainee trainee = getByUsername(username);
         trainee.getUser().setPassword(newPassword);
@@ -128,22 +122,18 @@ public class TraineeService {
         if (trainee.getUser() == null) {
             throw new ValidationException("User details are required");
         }
-        if (isBlank(trainee.getUser().getFirstName())) {
+        if (ValidationUtils.isBlank(trainee.getUser().getFirstName())) {
             throw new ValidationException("First name is required");
         }
-        if (isBlank(trainee.getUser().getLastName())) {
+        if (ValidationUtils.isBlank(trainee.getUser().getLastName())) {
             throw new ValidationException("Last name is required");
         }
     }
 
     private void validateForUpdate(Trainee trainee) {
-        if (trainee.getUser() == null || isBlank(trainee.getUser().getFirstName())
-                || isBlank(trainee.getUser().getLastName())) {
+        if (trainee.getUser() == null || ValidationUtils.isBlank(trainee.getUser().getFirstName())
+                || ValidationUtils.isBlank(trainee.getUser().getLastName())) {
             throw new ValidationException("First name and last name are required");
         }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 }

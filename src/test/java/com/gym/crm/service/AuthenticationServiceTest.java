@@ -3,6 +3,8 @@ package com.gym.crm.service;
 import com.gym.crm.dao.UserDao;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.AuthenticationException;
+import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,5 +78,50 @@ class AuthenticationServiceTest {
 
         assertThrows(AuthenticationException.class,
                 () -> authenticationService.authenticate("nobody", "secret"));
+    }
+
+    @Test
+    void changePasswordShouldThrowAuthenticationExceptionWhenOldCredentialsAreInvalid() {
+        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+
+        assertThrows(AuthenticationException.class,
+                () -> authenticationService.changePassword("john.doe", "wrongOld", "newPass"));
+    }
+
+    @Test
+    void changePasswordShouldThrowValidationExceptionWhenNewPasswordIsNull() {
+        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+
+        assertThrows(ValidationException.class,
+                () -> authenticationService.changePassword("john.doe", "secret", null));
+    }
+
+    @Test
+    void changePasswordShouldThrowValidationExceptionWhenNewPasswordIsBlank() {
+        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+
+        assertThrows(ValidationException.class,
+                () -> authenticationService.changePassword("john.doe", "secret", "   "));
+    }
+
+    @Test
+    void changePasswordShouldThrowEntityNotFoundExceptionWhenUserDisappearsBetweenLookups() {
+        User user = userWithPassword("secret");
+        when(userDao.findByUsername("john.doe"))
+                .thenReturn(Optional.of(user))
+                .thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> authenticationService.changePassword("john.doe", "secret", "newPass"));
+    }
+
+    @Test
+    void changePasswordShouldUpdatePasswordWhenCredentialsAndNewPasswordAreValid() {
+        User user = userWithPassword("secret");
+        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(user));
+
+        authenticationService.changePassword("john.doe", "secret", "newPass");
+
+        assertEquals("newPass", user.getPassword());
     }
 }

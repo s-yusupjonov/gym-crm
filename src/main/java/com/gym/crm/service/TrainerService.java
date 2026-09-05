@@ -1,13 +1,15 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainerDao;
+import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Trainer;
+import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +21,14 @@ public class TrainerService {
     private static final Logger log = LoggerFactory.getLogger(TrainerService.class);
 
     private final TrainerDao trainerDao;
-    private UserProfileService userProfileService;
+    private final UserProfileService userProfileService;
+    private final TrainingTypeDao trainingTypeDao;
 
-    @Autowired
-    public TrainerService(TrainerDao trainerDao) {
+    public TrainerService(TrainerDao trainerDao, UserProfileService userProfileService,
+                          TrainingTypeDao trainingTypeDao) {
         this.trainerDao = trainerDao;
-    }
-
-    @Autowired
-    public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+        this.trainingTypeDao = trainingTypeDao;
     }
 
     @Transactional
@@ -54,17 +54,25 @@ public class TrainerService {
         existing.getUser().setFirstName(updates.getUser().getFirstName());
         existing.getUser().setLastName(updates.getUser().getLastName());
         existing.setSpecialization(updates.getSpecialization());
+        existing.getUser().setActive(updates.getUser().isActive());
 
         log.info("Updated trainer profile: username={}", username);
 
         return existing;
     }
 
+    @Transactional(readOnly = true)
+    public TrainingType getSpecializationById(Long trainingTypeId) {
+        if (trainingTypeId == null) {
+            throw new ValidationException("Specialization is required");
+        }
+        return trainingTypeDao.findById(trainingTypeId)
+                .orElseThrow(() -> new ValidationException("Invalid specialization id: " + trainingTypeId));
+    }
+
     @Transactional
     public void changePassword(String username, String newPassword) {
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new ValidationException("New password must not be blank");
-        }
+        ValidationUtils.requireNonBlank(newPassword, "New password must not be blank");
 
         Trainer trainer = getByUsername(username);
         trainer.getUser().setPassword(newPassword);
@@ -100,10 +108,10 @@ public class TrainerService {
         if (trainer.getUser() == null) {
             throw new ValidationException("User details are required");
         }
-        if (isBlank(trainer.getUser().getFirstName())) {
+        if (ValidationUtils.isBlank(trainer.getUser().getFirstName())) {
             throw new ValidationException("First name is required");
         }
-        if (isBlank(trainer.getUser().getLastName())) {
+        if (ValidationUtils.isBlank(trainer.getUser().getLastName())) {
             throw new ValidationException("Last name is required");
         }
         if (trainer.getSpecialization() == null) {
@@ -112,13 +120,9 @@ public class TrainerService {
     }
 
     private void validateForUpdate(Trainer trainer) {
-        if (trainer.getUser() == null || isBlank(trainer.getUser().getFirstName())
-                || isBlank(trainer.getUser().getLastName())) {
+        if (trainer.getUser() == null || ValidationUtils.isBlank(trainer.getUser().getFirstName())
+                || ValidationUtils.isBlank(trainer.getUser().getLastName())) {
             throw new ValidationException("First name and last name are required");
         }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 }

@@ -2,7 +2,6 @@ package com.gym.crm.dao;
 
 import com.gym.crm.domain.Trainee;
 import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -10,14 +9,19 @@ import java.util.Optional;
 @Repository
 public class TraineeDao extends AbstractDao<Trainee> {
 
-    @Autowired
     public TraineeDao(SessionFactory sessionFactory) {
         super(sessionFactory, Trainee.class);
     }
 
     public Optional<Trainee> findByUsername(String username) {
         return currentSession()
-                .createQuery("select t from Trainee t join fetch t.user u where u.username = :username", Trainee.class)
+                .createQuery("select distinct t from Trainee t "
+                                + "join fetch t.user u "
+                                + "left join fetch t.trainers tr "
+                                + "left join fetch tr.user "
+                                + "left join fetch tr.specialization "
+                                + "where u.username = :username",
+                        Trainee.class)
                 .setParameter("username", username)
                 .uniqueResultOptional();
     }

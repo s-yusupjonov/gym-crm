@@ -1,10 +1,12 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.UserDao;
+import com.gym.crm.domain.User;
 import com.gym.crm.exception.AuthenticationException;
+import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,7 +17,6 @@ public class AuthenticationService {
 
     private final UserDao userDao;
 
-    @Autowired
     public AuthenticationService(UserDao userDao) {
         this.userDao = userDao;
     }
@@ -33,5 +34,18 @@ public class AuthenticationService {
             log.warn("Authentication failed for username={}", username);
             throw new AuthenticationException("Invalid username or password");
         }
+    }
+
+    @Transactional
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        authenticate(username, oldPassword);
+
+        ValidationUtils.requireNonBlank(newPassword, "New password must not be blank");
+
+        User user = userDao.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + username));
+        user.setPassword(newPassword);
+
+        log.info("Password changed for username={}", username);
     }
 }
