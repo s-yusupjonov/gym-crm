@@ -5,6 +5,7 @@ import com.gym.crm.domain.User;
 import com.gym.crm.exception.AuthenticationException;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.metrics.GymCrmMetrics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,6 +28,9 @@ class AuthenticationServiceTest {
 
     @Mock
     private UserDao userDao;
+
+    @Mock
+    private GymCrmMetrics metrics;
 
     @InjectMocks
     private AuthenticationService authenticationService;
@@ -65,11 +71,32 @@ class AuthenticationServiceTest {
     }
 
     @Test
+    void authenticateShouldRecordSuccessMetricWhenCredentialsMatch() {
+        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+
+        authenticationService.authenticate("john.doe", "secret");
+
+        verify(metrics).recordAuthenticationSuccess();
+        verify(metrics, never()).recordAuthenticationFailure();
+    }
+
+    @Test
     void authenticateShouldThrowAuthenticationExceptionWhenCredentialsDoNotMatch() {
         when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertThrows(AuthenticationException.class,
                 () -> authenticationService.authenticate("john.doe", "wrong"));
+    }
+
+    @Test
+    void authenticateShouldRecordFailureMetricWhenCredentialsDoNotMatch() {
+        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+
+        assertThrows(AuthenticationException.class,
+                () -> authenticationService.authenticate("john.doe", "wrong"));
+
+        verify(metrics).recordAuthenticationFailure();
+        verify(metrics, never()).recordAuthenticationSuccess();
     }
 
     @Test

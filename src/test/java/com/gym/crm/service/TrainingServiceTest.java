@@ -7,6 +7,7 @@ import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.metrics.GymCrmMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,11 +31,14 @@ class TrainingServiceTest {
     @Mock
     private TrainingTypeDao trainingTypeDao;
 
+    @Mock
+    private GymCrmMetrics metrics;
+
     private TrainingService trainingService;
 
     @BeforeEach
     void setUp() {
-        trainingService = new TrainingService(trainingDao, trainingTypeDao);
+        trainingService = new TrainingService(trainingDao, trainingTypeDao, metrics);
     }
 
     private Training validTraining() {
@@ -126,6 +130,7 @@ class TrainingServiceTest {
 
         assertEquals(training, saved);
         verify(trainingDao).save(training);
+        verify(metrics).recordTrainingCreated();
     }
 
     @Test

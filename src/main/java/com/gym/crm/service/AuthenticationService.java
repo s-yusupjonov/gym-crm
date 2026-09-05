@@ -4,6 +4,7 @@ import com.gym.crm.dao.UserDao;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.AuthenticationException;
 import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.metrics.GymCrmMetrics;
 import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +17,11 @@ public class AuthenticationService {
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
 
     private final UserDao userDao;
+    private final GymCrmMetrics metrics;
 
-    public AuthenticationService(UserDao userDao) {
+    public AuthenticationService(UserDao userDao, GymCrmMetrics metrics) {
         this.userDao = userDao;
+        this.metrics = metrics;
     }
 
     @Transactional(readOnly = true)
@@ -31,9 +34,11 @@ public class AuthenticationService {
     @Transactional(readOnly = true)
     public void authenticate(String username, String password) {
         if (!matchCredentials(username, password)) {
+            metrics.recordAuthenticationFailure();
             log.warn("Authentication failed for username={}", username);
             throw new AuthenticationException("Invalid username or password");
         }
+        metrics.recordAuthenticationSuccess();
     }
 
     @Transactional

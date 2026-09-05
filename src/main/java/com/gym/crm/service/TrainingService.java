@@ -5,6 +5,7 @@ import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.metrics.GymCrmMetrics;
 import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,10 +22,12 @@ public class TrainingService {
 
     private final TrainingDao trainingDao;
     private final TrainingTypeDao trainingTypeDao;
+    private final GymCrmMetrics metrics;
 
-    public TrainingService(TrainingDao trainingDao, TrainingTypeDao trainingTypeDao) {
+    public TrainingService(TrainingDao trainingDao, TrainingTypeDao trainingTypeDao, GymCrmMetrics metrics) {
         this.trainingDao = trainingDao;
         this.trainingTypeDao = trainingTypeDao;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -32,6 +35,7 @@ public class TrainingService {
         validate(training);
 
         Training saved = trainingDao.save(training);
+        metrics.recordTrainingCreated();
         log.info("Added training: name={}, traineeId={}, trainerId={}",
                 saved.getTrainingName(), saved.getTrainee().getId(), saved.getTrainer().getId());
 
