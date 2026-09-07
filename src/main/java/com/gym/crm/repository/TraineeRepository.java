@@ -1,28 +1,21 @@
-package com.gym.crm.dao;
+package com.gym.crm.repository;
 
 import com.gym.crm.domain.Trainee;
-import org.hibernate.SessionFactory;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public class TraineeDao extends AbstractDao<Trainee> {
+public interface TraineeRepository extends JpaRepository<Trainee, Long> {
 
-    public TraineeDao(SessionFactory sessionFactory) {
-        super(sessionFactory, Trainee.class);
-    }
-
-    public Optional<Trainee> findByUsername(String username) {
-        return currentSession()
-                .createQuery("select distinct t from Trainee t "
-                                + "join fetch t.user u "
-                                + "left join fetch t.trainers tr "
-                                + "left join fetch tr.user "
-                                + "left join fetch tr.specialization "
-                                + "where u.username = :username",
-                        Trainee.class)
-                .setParameter("username", username)
-                .uniqueResultOptional();
-    }
+    @Query("select distinct t from Trainee t "
+            + "join fetch t.user u "
+            + "left join fetch t.trainers tr "
+            + "left join fetch tr.user "
+            + "left join fetch tr.specialization "
+            + "where u.username = :username")
+    Optional<Trainee> findByUsername(@Param("username") String username);
 }
