@@ -2,36 +2,36 @@ package com.gym.crm.config;
 
 import com.gym.crm.logging.RestLoggingInterceptor;
 import com.gym.crm.security.AuthenticationInterceptor;
+import com.gym.crm.service.AuthenticationService;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * Spring Boot auto-configures the DispatcherServlet, Jackson ObjectMapper (JavaTimeModule included,
- * timestamps disabled by default) and Bean Validation, so this class is only responsible for the
- * interceptor chain that isn't covered by autoconfiguration.
- */
 @Configuration
-@Import(InterceptorConfig.class)
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig {
 
-    private final RestLoggingInterceptor restLoggingInterceptor;
-    private final AuthenticationInterceptor authenticationInterceptor;
-
-    public WebConfig(RestLoggingInterceptor restLoggingInterceptor, AuthenticationInterceptor authenticationInterceptor) {
-        this.restLoggingInterceptor = restLoggingInterceptor;
-        this.authenticationInterceptor = authenticationInterceptor;
+    @Bean
+    public RestLoggingInterceptor restLoggingInterceptor() {
+        return new RestLoggingInterceptor();
     }
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        // Logging runs first so failed-auth attempts are still logged in RestLoggingInterceptor#afterCompletion.
-        registry.addInterceptor(restLoggingInterceptor).addPathPatterns("/**");
+    @Bean
+    public AuthenticationInterceptor authenticationInterceptor(AuthenticationService authenticationService) {
+        return new AuthenticationInterceptor(authenticationService);
+    }
 
-        // Enforces credential checks on every endpoint except registration; /api/login authenticates itself.
-        registry.addInterceptor(authenticationInterceptor)
-                .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/login");
+    @Bean
+    public WebMvcConfigurer mvcInterceptorConfigurer(RestLoggingInterceptor restLoggingInterceptor,
+                                                     AuthenticationInterceptor authenticationInterceptor) {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addInterceptors(InterceptorRegistry registry) {
+                registry.addInterceptor(restLoggingInterceptor).addPathPatterns("/**");
+                registry.addInterceptor(authenticationInterceptor)
+                        .addPathPatterns("/api/**")
+                        .excludePathPatterns("/api/login");
+            }
+        };
     }
 }

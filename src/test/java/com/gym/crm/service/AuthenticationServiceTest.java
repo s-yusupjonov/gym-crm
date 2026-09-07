@@ -1,11 +1,11 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.UserDao;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.AuthenticationException;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
 import com.gym.crm.metrics.GymCrmMetrics;
+import com.gym.crm.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class AuthenticationServiceTest {
 
     @Mock
-    private UserDao userDao;
+    private UserRepository userRepository;
 
     @Mock
     private GymCrmMetrics metrics;
@@ -44,35 +44,35 @@ class AuthenticationServiceTest {
 
     @Test
     void matchCredentialsShouldReturnTrueWhenPasswordMatches() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertTrue(authenticationService.matchCredentials("john.doe", "secret"));
     }
 
     @Test
     void matchCredentialsShouldReturnFalseWhenPasswordDoesNotMatch() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertFalse(authenticationService.matchCredentials("john.doe", "wrong"));
     }
 
     @Test
     void matchCredentialsShouldReturnFalseWhenUserNotFound() {
-        when(userDao.findByUsername("nobody")).thenReturn(Optional.empty());
+        when(userRepository.findByUsername("nobody")).thenReturn(Optional.empty());
 
         assertFalse(authenticationService.matchCredentials("nobody", "secret"));
     }
 
     @Test
     void authenticateShouldNotThrowWhenCredentialsMatch() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertDoesNotThrow(() -> authenticationService.authenticate("john.doe", "secret"));
     }
 
     @Test
     void authenticateShouldRecordSuccessMetricWhenCredentialsMatch() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         authenticationService.authenticate("john.doe", "secret");
 
@@ -82,7 +82,7 @@ class AuthenticationServiceTest {
 
     @Test
     void authenticateShouldThrowAuthenticationExceptionWhenCredentialsDoNotMatch() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertThrows(AuthenticationException.class,
                 () -> authenticationService.authenticate("john.doe", "wrong"));
@@ -90,7 +90,7 @@ class AuthenticationServiceTest {
 
     @Test
     void authenticateShouldRecordFailureMetricWhenCredentialsDoNotMatch() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertThrows(AuthenticationException.class,
                 () -> authenticationService.authenticate("john.doe", "wrong"));
@@ -101,7 +101,7 @@ class AuthenticationServiceTest {
 
     @Test
     void authenticateShouldThrowAuthenticationExceptionWhenUserNotFound() {
-        when(userDao.findByUsername("nobody")).thenReturn(Optional.empty());
+        when(userRepository.findByUsername("nobody")).thenReturn(Optional.empty());
 
         assertThrows(AuthenticationException.class,
                 () -> authenticationService.authenticate("nobody", "secret"));
@@ -109,7 +109,7 @@ class AuthenticationServiceTest {
 
     @Test
     void changePasswordShouldThrowAuthenticationExceptionWhenOldCredentialsAreInvalid() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertThrows(AuthenticationException.class,
                 () -> authenticationService.changePassword("john.doe", "wrongOld", "newPass"));
@@ -117,7 +117,7 @@ class AuthenticationServiceTest {
 
     @Test
     void changePasswordShouldThrowValidationExceptionWhenNewPasswordIsNull() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertThrows(ValidationException.class,
                 () -> authenticationService.changePassword("john.doe", "secret", null));
@@ -125,7 +125,7 @@ class AuthenticationServiceTest {
 
     @Test
     void changePasswordShouldThrowValidationExceptionWhenNewPasswordIsBlank() {
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(userWithPassword("secret")));
 
         assertThrows(ValidationException.class,
                 () -> authenticationService.changePassword("john.doe", "secret", "   "));
@@ -134,7 +134,7 @@ class AuthenticationServiceTest {
     @Test
     void changePasswordShouldThrowEntityNotFoundExceptionWhenUserDisappearsBetweenLookups() {
         User user = userWithPassword("secret");
-        when(userDao.findByUsername("john.doe"))
+        when(userRepository.findByUsername("john.doe"))
                 .thenReturn(Optional.of(user))
                 .thenReturn(Optional.empty());
 
@@ -145,7 +145,7 @@ class AuthenticationServiceTest {
     @Test
     void changePasswordShouldUpdatePasswordWhenCredentialsAndNewPasswordAreValid() {
         User user = userWithPassword("secret");
-        when(userDao.findByUsername("john.doe")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(user));
 
         authenticationService.changePassword("john.doe", "secret", "newPass");
 

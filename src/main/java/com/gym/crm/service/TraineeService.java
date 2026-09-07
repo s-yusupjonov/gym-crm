@@ -1,12 +1,12 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.TraineeDao;
-import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.repository.TraineeRepository;
+import com.gym.crm.repository.TrainerRepository;
 import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +23,14 @@ public class TraineeService {
 
     private static final Logger log = LoggerFactory.getLogger(TraineeService.class);
 
-    private final TraineeDao traineeDao;
-    private final TrainerDao trainerDao;
+    private final TraineeRepository traineeRepository;
+    private final TrainerRepository trainerRepository;
     private final UserProfileService userProfileService;
 
-    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao, UserProfileService userProfileService) {
-        this.traineeDao = traineeDao;
-        this.trainerDao = trainerDao;
+    public TraineeService(TraineeRepository traineeRepository, TrainerRepository trainerRepository,
+                          UserProfileService userProfileService) {
+        this.traineeRepository = traineeRepository;
+        this.trainerRepository = trainerRepository;
         this.userProfileService = userProfileService;
     }
 
@@ -42,7 +43,7 @@ public class TraineeService {
         user.setPassword(userProfileService.generatePassword());
         user.setActive(true);
 
-        Trainee saved = traineeDao.save(trainee);
+        Trainee saved = traineeRepository.save(trainee);
         log.info("Created trainee profile: username={}", user.getUsername());
 
         return saved;
@@ -85,26 +86,26 @@ public class TraineeService {
     @Transactional
     public void deleteByUsername(String username) {
         Trainee trainee = getByUsername(username);
-        traineeDao.delete(trainee);
+        traineeRepository.delete(trainee);
 
         log.info("Deleted trainee profile: username={}", username);
     }
 
     @Transactional(readOnly = true)
     public Trainee getByUsername(String username) {
-        return traineeDao.findByUsername(username)
+        return traineeRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Trainee not found: " + username));
     }
 
     @Transactional(readOnly = true)
     public List<Trainee> getAll() {
-        return traineeDao.findAll();
+        return traineeRepository.findAll();
     }
 
     @Transactional
     public List<Trainer> updateTrainersList(String traineeUsername, List<String> trainerUsernames) {
         Trainee trainee = getByUsername(traineeUsername);
-        List<Trainer> trainers = trainerDao.findByUsernames(trainerUsernames);
+        List<Trainer> trainers = trainerRepository.findByUsernames(trainerUsernames);
 
         if (trainers.size() != trainerUsernames.size()) {
             throw new ValidationException("One or more trainer usernames do not exist");

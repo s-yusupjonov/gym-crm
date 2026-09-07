@@ -1,5 +1,6 @@
-package com.gym.crm.dao;
+package com.gym.crm.repository;
 
+import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.User;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -14,11 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class UserDaoTest {
+class TraineeDaoTest {
 
     private static SessionFactory sessionFactory;
 
-    private UserDao userDao;
+    private TraineeDao traineeDao;
 
     @BeforeAll
     static void initSessionFactory() {
@@ -32,7 +33,7 @@ class UserDaoTest {
 
     @BeforeEach
     void setUp() {
-        userDao = new UserDao(sessionFactory);
+        traineeDao = new TraineeDao(sessionFactory);
         sessionFactory.getCurrentSession().beginTransaction();
     }
 
@@ -41,42 +42,44 @@ class UserDaoTest {
         sessionFactory.getCurrentSession().getTransaction().rollback();
     }
 
-    private User newUser(String username) {
+    private Trainee newTrainee(String username) {
         User user = new User();
-        user.setFirstName("John");
-        user.setLastName("Doe");
+        user.setFirstName("Alice");
+        user.setLastName("Smith");
         user.setUsername(username);
         user.setPassword("password");
         user.setActive(true);
-        return user;
+
+        Trainee trainee = new Trainee();
+        trainee.setUser(user);
+        return trainee;
     }
 
     @Test
-    void findByUsernameShouldReturnUserWhenExists() {
-        userDao.save(newUser("john.doe"));
+    void findByUsernameShouldReturnTraineeWhenExists() {
+        traineeDao.save(newTrainee("alice.smith"));
 
-        Optional<User> found = userDao.findByUsername("john.doe");
+        Optional<Trainee> found = traineeDao.findByUsername("alice.smith");
 
         assertTrue(found.isPresent());
-        assertEquals("john.doe", found.get().getUsername());
+        assertEquals("alice.smith", found.get().getUser().getUsername());
     }
 
     @Test
     void findByUsernameShouldReturnEmptyWhenNotExists() {
-        Optional<User> found = userDao.findByUsername("nobody");
+        Optional<Trainee> found = traineeDao.findByUsername("nobody");
 
         assertFalse(found.isPresent());
     }
 
     @Test
-    void existsByUsernameShouldReturnTrueWhenExists() {
-        userDao.save(newUser("jane.doe"));
+    void deleteShouldRemoveTraineeAndCascadeToUser() {
+        Trainee saved = traineeDao.save(newTrainee("bob.jones"));
+        sessionFactory.getCurrentSession().flush();
 
-        assertTrue(userDao.existsByUsername("jane.doe"));
-    }
+        traineeDao.delete(saved);
+        sessionFactory.getCurrentSession().flush();
 
-    @Test
-    void existsByUsernameShouldReturnFalseWhenNotExists() {
-        assertFalse(userDao.existsByUsername("nobody"));
+        assertFalse(traineeDao.findByUsername("bob.jones").isPresent());
     }
 }

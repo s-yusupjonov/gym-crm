@@ -1,12 +1,12 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.TrainerDao;
-import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.repository.TrainerRepository;
+import com.gym.crm.repository.TrainingTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,19 +25,19 @@ import static org.mockito.Mockito.when;
 class TrainerServiceTest {
 
     @Mock
-    private TrainerDao trainerDao;
+    private TrainerRepository trainerRepository;
 
     @Mock
     private UserProfileService userProfileService;
 
     @Mock
-    private TrainingTypeDao trainingTypeDao;
+    private TrainingTypeRepository trainingTypeRepository;
 
     private TrainerService trainerService;
 
     @BeforeEach
     void setUp() {
-        trainerService = new TrainerService(trainerDao, userProfileService, trainingTypeDao);
+        trainerService = new TrainerService(trainerRepository, userProfileService, trainingTypeRepository);
     }
 
     private Trainer trainerWithUser(String firstName, String lastName, TrainingType specialization) {
@@ -83,14 +83,14 @@ class TrainerServiceTest {
         Trainer trainer = trainerWithUser("Carl", "Coach", new TrainingType());
         when(userProfileService.generateUsername("Carl", "Coach")).thenReturn("Carl.Coach");
         when(userProfileService.generatePassword()).thenReturn("generatedPass");
-        when(trainerDao.save(trainer)).thenReturn(trainer);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         Trainer saved = trainerService.createTrainerProfile(trainer);
 
         assertEquals("Carl.Coach", saved.getUser().getUsername());
         assertEquals("generatedPass", saved.getUser().getPassword());
         assertEquals(true, saved.getUser().isActive());
-        verify(trainerDao).save(trainer);
+        verify(trainerRepository).save(trainer);
     }
 
     @Test
@@ -112,7 +112,7 @@ class TrainerServiceTest {
     @Test
     void updateTrainerProfileShouldThrowWhenTrainerNotFound() {
         Trainer updates = trainerWithUser("Carl", "Coach", new TrainingType());
-        when(trainerDao.findByUsername("carl.coach")).thenReturn(Optional.empty());
+        when(trainerRepository.findByUsername("carl.coach")).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class,
                 () -> trainerService.updateTrainerProfile("carl.coach", updates));
@@ -124,7 +124,7 @@ class TrainerServiceTest {
         TrainingType newSpecialization = new TrainingType();
         newSpecialization.setTrainingTypeName("YOGA");
         Trainer updates = trainerWithUser("New", "Name", newSpecialization);
-        when(trainerDao.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
+        when(trainerRepository.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
 
         Trainer result = trainerService.updateTrainerProfile("carl.coach", updates);
 
@@ -147,7 +147,7 @@ class TrainerServiceTest {
     @Test
     void changePasswordShouldUpdatePasswordWhenValid() {
         Trainer existing = trainerWithUser("Carl", "Coach", new TrainingType());
-        when(trainerDao.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
+        when(trainerRepository.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
 
         trainerService.changePassword("carl.coach", "newPass");
 
@@ -157,7 +157,7 @@ class TrainerServiceTest {
     @Test
     void setActiveShouldUpdateActiveFlag() {
         Trainer existing = trainerWithUser("Carl", "Coach", new TrainingType());
-        when(trainerDao.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
+        when(trainerRepository.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
 
         trainerService.setActive("carl.coach", false);
 
@@ -166,7 +166,7 @@ class TrainerServiceTest {
 
     @Test
     void getByUsernameShouldThrowWhenNotFound() {
-        when(trainerDao.findByUsername("nobody")).thenReturn(Optional.empty());
+        when(trainerRepository.findByUsername("nobody")).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> trainerService.getByUsername("nobody"));
     }
@@ -174,23 +174,23 @@ class TrainerServiceTest {
     @Test
     void getByUsernameShouldReturnTrainerWhenFound() {
         Trainer existing = trainerWithUser("Carl", "Coach", new TrainingType());
-        when(trainerDao.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
+        when(trainerRepository.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
 
         assertEquals(existing, trainerService.getByUsername("carl.coach"));
     }
 
     @Test
-    void getAllShouldDelegateToDao() {
+    void getAllShouldDelegateToRepository() {
         List<Trainer> all = List.of(trainerWithUser("Carl", "Coach", new TrainingType()));
-        when(trainerDao.findAll()).thenReturn(all);
+        when(trainerRepository.findAll()).thenReturn(all);
 
         assertEquals(all, trainerService.getAll());
     }
 
     @Test
-    void getTrainersNotAssignedToTraineeShouldDelegateToDao() {
+    void getTrainersNotAssignedToTraineeShouldDelegateToRepository() {
         List<Trainer> unassigned = List.of(trainerWithUser("Carl", "Coach", new TrainingType()));
-        when(trainerDao.findNotAssignedToTrainee("john.doe")).thenReturn(unassigned);
+        when(trainerRepository.findNotAssignedToTrainee("john.doe")).thenReturn(unassigned);
 
         assertEquals(unassigned, trainerService.getTrainersNotAssignedToTrainee("john.doe"));
     }

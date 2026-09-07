@@ -1,4 +1,4 @@
-package com.gym.crm.dao;
+package com.gym.crm.repository;
 
 import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.Trainer;

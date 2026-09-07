@@ -1,6 +1,6 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.UserDao;
+import com.gym.crm.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,24 +13,24 @@ public class UserProfileService {
     private static final int PASSWORD_LENGTH = 10;
 
     private final SecureRandom random = new SecureRandom();
-    private final UserDao userDao;
+    private final UserRepository userRepository;
 
-    public UserProfileService(UserDao userDao) {
-        this.userDao = userDao;
+    public UserProfileService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
     public String generateUsername(String firstName, String lastName) {
         String base = firstName + "." + lastName;
 
-        if (!userDao.existsByUsername(base)) {
+        if (!userRepository.existsByUsername(base)) {
             return base;
         }
 
         int suffix = 1;
         String candidate = base + suffix;
 
-        while (userDao.existsByUsername(candidate)) {
+        while (userRepository.existsByUsername(candidate)) {
             suffix++;
             candidate = base + suffix;
         }

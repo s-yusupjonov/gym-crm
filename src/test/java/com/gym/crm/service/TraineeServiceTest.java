@@ -1,12 +1,12 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.TraineeDao;
-import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.repository.TraineeRepository;
+import com.gym.crm.repository.TrainerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 class TraineeServiceTest {
 
     @Mock
-    private TraineeDao traineeDao;
+    private TraineeRepository traineeRepository;
 
     @Mock
-    private TrainerDao trainerDao;
+    private TrainerRepository trainerRepository;
 
     @Mock
     private UserProfileService userProfileService;
@@ -38,7 +38,7 @@ class TraineeServiceTest {
 
     @BeforeEach
     void setUp() {
-        traineeService = new TraineeService(traineeDao, trainerDao, userProfileService);
+        traineeService = new TraineeService(traineeRepository, trainerRepository, userProfileService);
     }
 
     private Trainee traineeWithUser(String firstName, String lastName) {
@@ -76,14 +76,14 @@ class TraineeServiceTest {
         Trainee trainee = traineeWithUser("John", "Doe");
         when(userProfileService.generateUsername("John", "Doe")).thenReturn("John.Doe");
         when(userProfileService.generatePassword()).thenReturn("generatedPass");
-        when(traineeDao.save(trainee)).thenReturn(trainee);
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         Trainee saved = traineeService.createTraineeProfile(trainee);
 
         assertEquals("John.Doe", saved.getUser().getUsername());
         assertEquals("generatedPass", saved.getUser().getPassword());
         assertTrue(saved.getUser().isActive());
-        verify(traineeDao).save(trainee);
+        verify(traineeRepository).save(trainee);
     }
 
     @Test
@@ -105,7 +105,7 @@ class TraineeServiceTest {
     @Test
     void updateTraineeProfileShouldThrowWhenTraineeNotFound() {
         Trainee updates = traineeWithUser("John", "Doe");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.empty());
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class,
                 () -> traineeService.updateTraineeProfile("john.doe", updates));
@@ -116,7 +116,7 @@ class TraineeServiceTest {
         Trainee existing = traineeWithUser("Old", "Name");
         Trainee updates = traineeWithUser("New", "Name");
         updates.setAddress("New Address");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
 
         Trainee result = traineeService.updateTraineeProfile("john.doe", updates);
 
@@ -139,7 +139,7 @@ class TraineeServiceTest {
     @Test
     void changePasswordShouldUpdatePasswordWhenValid() {
         Trainee existing = traineeWithUser("John", "Doe");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
 
         traineeService.changePassword("john.doe", "newPass");
 
@@ -149,7 +149,7 @@ class TraineeServiceTest {
     @Test
     void setActiveShouldUpdateActiveFlag() {
         Trainee existing = traineeWithUser("John", "Doe");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
 
         traineeService.setActive("john.doe", false);
 
@@ -159,16 +159,16 @@ class TraineeServiceTest {
     @Test
     void deleteByUsernameShouldDeleteFoundTrainee() {
         Trainee existing = traineeWithUser("John", "Doe");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
 
         traineeService.deleteByUsername("john.doe");
 
-        verify(traineeDao).delete(existing);
+        verify(traineeRepository).delete(existing);
     }
 
     @Test
     void getByUsernameShouldThrowWhenNotFound() {
-        when(traineeDao.findByUsername("nobody")).thenReturn(Optional.empty());
+        when(traineeRepository.findByUsername("nobody")).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> traineeService.getByUsername("nobody"));
     }
@@ -176,15 +176,15 @@ class TraineeServiceTest {
     @Test
     void getByUsernameShouldReturnTraineeWhenFound() {
         Trainee existing = traineeWithUser("John", "Doe");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
 
         assertEquals(existing, traineeService.getByUsername("john.doe"));
     }
 
     @Test
-    void getAllShouldDelegateToDao() {
+    void getAllShouldDelegateToRepository() {
         List<Trainee> all = List.of(traineeWithUser("John", "Doe"));
-        when(traineeDao.findAll()).thenReturn(all);
+        when(traineeRepository.findAll()).thenReturn(all);
 
         assertEquals(all, traineeService.getAll());
     }
@@ -192,8 +192,8 @@ class TraineeServiceTest {
     @Test
     void updateTrainersListShouldThrowWhenSomeUsernamesDoNotExist() {
         Trainee existing = traineeWithUser("John", "Doe");
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
-        when(trainerDao.findByUsernames(List.of("t1", "t2"))).thenReturn(List.of(new Trainer()));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(trainerRepository.findByUsernames(List.of("t1", "t2"))).thenReturn(List.of(new Trainer()));
 
         assertThrows(ValidationException.class,
                 () -> traineeService.updateTrainersList("john.doe", List.of("t1", "t2")));
@@ -204,8 +204,8 @@ class TraineeServiceTest {
         Trainee existing = traineeWithUser("John", "Doe");
         Trainer trainer1 = new Trainer();
         Trainer trainer2 = new Trainer();
-        when(traineeDao.findByUsername("john.doe")).thenReturn(Optional.of(existing));
-        when(trainerDao.findByUsernames(List.of("t1", "t2"))).thenReturn(List.of(trainer1, trainer2));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(trainerRepository.findByUsernames(List.of("t1", "t2"))).thenReturn(List.of(trainer1, trainer2));
 
         List<Trainer> result = traineeService.updateTrainersList("john.doe", List.of("t1", "t2"));
 

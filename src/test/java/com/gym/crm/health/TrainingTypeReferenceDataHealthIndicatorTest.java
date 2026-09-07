@@ -1,16 +1,12 @@
 package com.gym.crm.health;
 
-import com.gym.crm.dao.TrainingTypeDao;
-import com.gym.crm.domain.TrainingType;
+import com.gym.crm.repository.TrainingTypeRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
-
-import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
@@ -19,23 +15,23 @@ import static org.mockito.Mockito.when;
 class TrainingTypeReferenceDataHealthIndicatorTest {
 
     @Mock
-    private TrainingTypeDao trainingTypeDao;
+    private TrainingTypeRepository trainingTypeRepository;
 
     @Test
     void healthShouldReportUpWhenTrainingTypesAreSeeded() {
-        when(trainingTypeDao.findAll()).thenReturn(List.of(new TrainingType(), new TrainingType()));
+        when(trainingTypeRepository.count()).thenReturn(2L);
 
-        Health health = new TrainingTypeReferenceDataHealthIndicator(trainingTypeDao).health();
+        Health health = new TrainingTypeReferenceDataHealthIndicator(trainingTypeRepository).health();
 
         assertEquals(Status.UP, health.getStatus());
-        assertEquals(2, health.getDetails().get("trainingTypes"));
+        assertEquals(2L, health.getDetails().get("trainingTypes"));
     }
 
     @Test
     void healthShouldReportDownWhenNoTrainingTypesAreSeeded() {
-        when(trainingTypeDao.findAll()).thenReturn(Collections.emptyList());
+        when(trainingTypeRepository.count()).thenReturn(0L);
 
-        Health health = new TrainingTypeReferenceDataHealthIndicator(trainingTypeDao).health();
+        Health health = new TrainingTypeReferenceDataHealthIndicator(trainingTypeRepository).health();
 
         assertEquals(Status.DOWN, health.getStatus());
     }
