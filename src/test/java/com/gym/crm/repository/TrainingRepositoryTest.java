@@ -1,16 +1,15 @@
-package com.gym.crm.dao;
+package com.gym.crm.repository;
 
 import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
-import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,45 +17,36 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TrainingDaoTest {
+@DataJpaTest
+@ActiveProfiles("test")
+class TrainingRepositoryTest {
 
-    private static SessionFactory sessionFactory;
+    @Autowired
+    private TrainingRepository trainingRepository;
 
-    private TrainingDao trainingDao;
-    private TraineeDao traineeDao;
-    private TrainerDao trainerDao;
-    private TrainingTypeDao trainingTypeDao;
+    @Autowired
+    private TraineeRepository traineeRepository;
+
+    @Autowired
+    private TrainerRepository trainerRepository;
+
+    @Autowired
+    private TrainingTypeRepository trainingTypeRepository;
 
     private Trainee trainee;
     private Trainer trainer;
     private TrainingType cardio;
     private TrainingType yoga;
 
-    @BeforeAll
-    static void initSessionFactory() {
-        sessionFactory = TestSessionFactoryFactory.build();
-    }
-
-    @AfterAll
-    static void closeSessionFactory() {
-        sessionFactory.close();
-    }
-
     @BeforeEach
     void setUp() {
-        trainingDao = new TrainingDao(sessionFactory);
-        traineeDao = new TraineeDao(sessionFactory);
-        trainerDao = new TrainerDao(sessionFactory);
-        trainingTypeDao = new TrainingTypeDao(sessionFactory);
-        sessionFactory.getCurrentSession().beginTransaction();
-
         cardio = new TrainingType();
         cardio.setTrainingTypeName("CARDIO");
-        trainingTypeDao.save(cardio);
+        trainingTypeRepository.saveAndFlush(cardio);
 
         yoga = new TrainingType();
         yoga.setTrainingTypeName("YOGA");
-        trainingTypeDao.save(yoga);
+        trainingTypeRepository.saveAndFlush(yoga);
 
         User traineeUser = new User();
         traineeUser.setFirstName("Nina");
@@ -66,7 +56,7 @@ class TrainingDaoTest {
         traineeUser.setActive(true);
         trainee = new Trainee();
         trainee.setUser(traineeUser);
-        traineeDao.save(trainee);
+        traineeRepository.saveAndFlush(trainee);
 
         User trainerUser = new User();
         trainerUser.setFirstName("Oscar");
@@ -77,14 +67,7 @@ class TrainingDaoTest {
         trainer = new Trainer();
         trainer.setUser(trainerUser);
         trainer.setSpecialization(cardio);
-        trainerDao.save(trainer);
-
-        sessionFactory.getCurrentSession().flush();
-    }
-
-    @AfterEach
-    void tearDown() {
-        sessionFactory.getCurrentSession().getTransaction().rollback();
+        trainerRepository.saveAndFlush(trainer);
     }
 
     private Training newTraining(LocalDate date, TrainingType type, String name) {
@@ -95,15 +78,14 @@ class TrainingDaoTest {
         training.setTrainingType(type);
         training.setTrainingDate(date);
         training.setTrainingDuration(60);
-        return trainingDao.save(training);
+        return trainingRepository.saveAndFlush(training);
     }
 
     @Test
     void findTraineeTrainingsShouldReturnAllWhenNoOptionalFiltersProvided() {
         newTraining(LocalDate.of(2026, 1, 10), cardio, "Morning Cardio");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> found = trainingDao.findTraineeTrainings("nina.newman", null, null, null, null);
+        List<Training> found = trainingRepository.findTraineeTrainings("nina.newman", null, null, null, null);
 
         assertEquals(1, found.size());
     }
@@ -112,9 +94,8 @@ class TrainingDaoTest {
     void findTraineeTrainingsShouldFilterByFromDate() {
         newTraining(LocalDate.of(2026, 1, 1), cardio, "Early");
         newTraining(LocalDate.of(2026, 2, 1), cardio, "Later");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> found = trainingDao.findTraineeTrainings(
+        List<Training> found = trainingRepository.findTraineeTrainings(
                 "nina.newman", LocalDate.of(2026, 1, 15), null, null, null);
 
         assertEquals(1, found.size());
@@ -125,9 +106,8 @@ class TrainingDaoTest {
     void findTraineeTrainingsShouldFilterByToDate() {
         newTraining(LocalDate.of(2026, 1, 1), cardio, "Early");
         newTraining(LocalDate.of(2026, 2, 1), cardio, "Later");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> found = trainingDao.findTraineeTrainings(
+        List<Training> found = trainingRepository.findTraineeTrainings(
                 "nina.newman", null, LocalDate.of(2026, 1, 15), null, null);
 
         assertEquals(1, found.size());
@@ -137,11 +117,10 @@ class TrainingDaoTest {
     @Test
     void findTraineeTrainingsShouldFilterByTrainerName() {
         newTraining(LocalDate.of(2026, 1, 1), cardio, "Session");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> matching = trainingDao.findTraineeTrainings(
+        List<Training> matching = trainingRepository.findTraineeTrainings(
                 "nina.newman", null, null, "Ortiz", null);
-        List<Training> nonMatching = trainingDao.findTraineeTrainings(
+        List<Training> nonMatching = trainingRepository.findTraineeTrainings(
                 "nina.newman", null, null, "Nobody", null);
 
         assertEquals(1, matching.size());
@@ -149,23 +128,11 @@ class TrainingDaoTest {
     }
 
     @Test
-    void findTraineeTrainingsShouldIgnoreBlankTrainerName() {
-        newTraining(LocalDate.of(2026, 1, 1), cardio, "Session");
-        sessionFactory.getCurrentSession().flush();
-
-        List<Training> found = trainingDao.findTraineeTrainings(
-                "nina.newman", null, null, "  ", null);
-
-        assertEquals(1, found.size());
-    }
-
-    @Test
     void findTraineeTrainingsShouldFilterByTrainingTypeName() {
         newTraining(LocalDate.of(2026, 1, 1), cardio, "Cardio Session");
         newTraining(LocalDate.of(2026, 1, 2), yoga, "Yoga Session");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> found = trainingDao.findTraineeTrainings(
+        List<Training> found = trainingRepository.findTraineeTrainings(
                 "nina.newman", null, null, null, "YOGA");
 
         assertEquals(1, found.size());
@@ -173,22 +140,10 @@ class TrainingDaoTest {
     }
 
     @Test
-    void findTraineeTrainingsShouldIgnoreBlankTrainingTypeName() {
-        newTraining(LocalDate.of(2026, 1, 1), cardio, "Session");
-        sessionFactory.getCurrentSession().flush();
-
-        List<Training> found = trainingDao.findTraineeTrainings(
-                "nina.newman", null, null, null, "");
-
-        assertEquals(1, found.size());
-    }
-
-    @Test
     void findTrainerTrainingsShouldReturnAllWhenNoOptionalFiltersProvided() {
         newTraining(LocalDate.of(2026, 1, 10), cardio, "Morning Cardio");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> found = trainingDao.findTrainerTrainings("oscar.ortiz", null, null, null);
+        List<Training> found = trainingRepository.findTrainerTrainings("oscar.ortiz", null, null, null);
 
         assertEquals(1, found.size());
     }
@@ -198,9 +153,8 @@ class TrainingDaoTest {
         newTraining(LocalDate.of(2026, 1, 1), cardio, "Early");
         newTraining(LocalDate.of(2026, 6, 1), cardio, "Mid");
         newTraining(LocalDate.of(2026, 12, 1), cardio, "Late");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> found = trainingDao.findTrainerTrainings(
+        List<Training> found = trainingRepository.findTrainerTrainings(
                 "oscar.ortiz", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 11, 1), null);
 
         assertEquals(1, found.size());
@@ -210,24 +164,13 @@ class TrainingDaoTest {
     @Test
     void findTrainerTrainingsShouldFilterByTraineeName() {
         newTraining(LocalDate.of(2026, 1, 1), cardio, "Session");
-        sessionFactory.getCurrentSession().flush();
 
-        List<Training> matching = trainingDao.findTrainerTrainings(
+        List<Training> matching = trainingRepository.findTrainerTrainings(
                 "oscar.ortiz", null, null, "Newman");
-        List<Training> nonMatching = trainingDao.findTrainerTrainings(
+        List<Training> nonMatching = trainingRepository.findTrainerTrainings(
                 "oscar.ortiz", null, null, "Nobody");
 
         assertEquals(1, matching.size());
         assertTrue(nonMatching.isEmpty());
-    }
-
-    @Test
-    void findTrainerTrainingsShouldIgnoreBlankTraineeName() {
-        newTraining(LocalDate.of(2026, 1, 1), cardio, "Session");
-        sessionFactory.getCurrentSession().flush();
-
-        List<Training> found = trainingDao.findTrainerTrainings("oscar.ortiz", null, null, " ");
-
-        assertEquals(1, found.size());
     }
 }

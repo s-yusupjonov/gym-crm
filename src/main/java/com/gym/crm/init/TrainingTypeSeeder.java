@@ -1,10 +1,8 @@
 package com.gym.crm.init;
 
 import com.gym.crm.domain.TrainingType;
+import com.gym.crm.repository.TrainingTypeRepository;
 import jakarta.annotation.PostConstruct;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -19,29 +17,27 @@ public class TrainingTypeSeeder {
     private static final List<String> DEFAULT_TYPES = List.of(
             "CARDIO", "STRENGTH", "YOGA", "CROSSFIT", "PILATES", "ZUMBA");
 
-    private final SessionFactory sessionFactory;
+    private final TrainingTypeRepository trainingTypeRepository;
 
-    public TrainingTypeSeeder(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
+    public TrainingTypeSeeder(TrainingTypeRepository trainingTypeRepository) {
+        this.trainingTypeRepository = trainingTypeRepository;
     }
 
     @PostConstruct
     public void seed() {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction tx = session.beginTransaction();
+        if (trainingTypeRepository.count() > 0) {
+            return;
+        }
 
-            Long count = session.createQuery("select count(t) from TrainingType t", Long.class).uniqueResult();
-
-            if (count != null && count == 0) {
-                for (String name : DEFAULT_TYPES) {
+        List<TrainingType> types = DEFAULT_TYPES.stream()
+                .map(name -> {
                     TrainingType type = new TrainingType();
                     type.setTrainingTypeName(name);
-                    session.persist(type);
-                }
-                log.info("Seeded {} default training types", DEFAULT_TYPES.size());
-            }
+                    return type;
+                })
+                .toList();
 
-            tx.commit();
-        }
+        trainingTypeRepository.saveAll(types);
+        log.info("Seeded {} default training types", types.size());
     }
 }

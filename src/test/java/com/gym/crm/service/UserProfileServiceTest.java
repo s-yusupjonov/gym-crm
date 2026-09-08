@@ -1,6 +1,6 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.UserDao;
+import com.gym.crm.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,14 +16,14 @@ import static org.mockito.Mockito.when;
 class UserProfileServiceTest {
 
     @Mock
-    private UserDao userDao;
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserProfileService userProfileService;
 
     @Test
     void generateUsernameShouldReturnBaseWhenNoCollision() {
-        when(userDao.existsByUsername("John.Doe")).thenReturn(false);
+        when(userRepository.existsByUsername("John.Doe")).thenReturn(false);
 
         String username = userProfileService.generateUsername("John", "Doe");
 
@@ -32,8 +32,8 @@ class UserProfileServiceTest {
 
     @Test
     void generateUsernameShouldAppendSuffixOnSingleCollision() {
-        when(userDao.existsByUsername("John.Doe")).thenReturn(true);
-        when(userDao.existsByUsername("John.Doe1")).thenReturn(false);
+        when(userRepository.existsByUsername("John.Doe")).thenReturn(true);
+        when(userRepository.existsByUsername("John.Doe1")).thenReturn(false);
 
         String username = userProfileService.generateUsername("John", "Doe");
 
@@ -42,18 +42,18 @@ class UserProfileServiceTest {
 
     @Test
     void generateUsernameShouldIncrementSuffixUntilFreeSlotFound() {
-        when(userDao.existsByUsername("John.Doe")).thenReturn(true);
-        when(userDao.existsByUsername("John.Doe1")).thenReturn(true);
-        when(userDao.existsByUsername("John.Doe2")).thenReturn(true);
-        when(userDao.existsByUsername("John.Doe3")).thenReturn(false);
+        when(userRepository.existsByUsername("John.Doe")).thenReturn(true);
+        when(userRepository.existsByUsername("John.Doe1")).thenReturn(true);
+        when(userRepository.existsByUsername("John.Doe2")).thenReturn(true);
+        when(userRepository.existsByUsername("John.Doe3")).thenReturn(false);
 
         String username = userProfileService.generateUsername("John", "Doe");
 
         assertEquals("John.Doe3", username);
-        verify(userDao).existsByUsername("John.Doe");
-        verify(userDao).existsByUsername("John.Doe1");
-        verify(userDao).existsByUsername("John.Doe2");
-        verify(userDao).existsByUsername("John.Doe3");
+        verify(userRepository).existsByUsername("John.Doe");
+        verify(userRepository).existsByUsername("John.Doe1");
+        verify(userRepository).existsByUsername("John.Doe2");
+        verify(userRepository).existsByUsername("John.Doe3");
     }
 
     @Test

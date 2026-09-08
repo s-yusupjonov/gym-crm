@@ -1,12 +1,12 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.TrainerDao;
-import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.repository.TrainerRepository;
+import com.gym.crm.repository.TrainingTypeRepository;
 import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,15 +20,15 @@ public class TrainerService {
 
     private static final Logger log = LoggerFactory.getLogger(TrainerService.class);
 
-    private final TrainerDao trainerDao;
+    private final TrainerRepository trainerRepository;
     private final UserProfileService userProfileService;
-    private final TrainingTypeDao trainingTypeDao;
+    private final TrainingTypeRepository trainingTypeRepository;
 
-    public TrainerService(TrainerDao trainerDao, UserProfileService userProfileService,
-                          TrainingTypeDao trainingTypeDao) {
-        this.trainerDao = trainerDao;
+    public TrainerService(TrainerRepository trainerRepository, UserProfileService userProfileService,
+                          TrainingTypeRepository trainingTypeRepository) {
+        this.trainerRepository = trainerRepository;
         this.userProfileService = userProfileService;
-        this.trainingTypeDao = trainingTypeDao;
+        this.trainingTypeRepository = trainingTypeRepository;
     }
 
     @Transactional
@@ -40,7 +40,7 @@ public class TrainerService {
         user.setPassword(userProfileService.generatePassword());
         user.setActive(true);
 
-        Trainer saved = trainerDao.save(trainer);
+        Trainer saved = trainerRepository.save(trainer);
         log.info("Created trainer profile: username={}", user.getUsername());
 
         return saved;
@@ -66,7 +66,7 @@ public class TrainerService {
         if (trainingTypeId == null) {
             throw new ValidationException("Specialization is required");
         }
-        return trainingTypeDao.findById(trainingTypeId)
+        return trainingTypeRepository.findById(trainingTypeId)
                 .orElseThrow(() -> new ValidationException("Invalid specialization id: " + trainingTypeId));
     }
 
@@ -90,18 +90,18 @@ public class TrainerService {
 
     @Transactional(readOnly = true)
     public Trainer getByUsername(String username) {
-        return trainerDao.findByUsername(username)
+        return trainerRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Trainer not found: " + username));
     }
 
     @Transactional(readOnly = true)
     public List<Trainer> getAll() {
-        return trainerDao.findAll();
+        return trainerRepository.findAll();
     }
 
     @Transactional(readOnly = true)
     public List<Trainer> getTrainersNotAssignedToTrainee(String traineeUsername) {
-        return trainerDao.findNotAssignedToTrainee(traineeUsername);
+        return trainerRepository.findNotAssignedToTrainee(traineeUsername);
     }
 
     private void validateForCreate(Trainer trainer) {

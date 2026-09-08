@@ -1,12 +1,13 @@
 package com.gym.crm.service;
 
-import com.gym.crm.dao.TrainingDao;
-import com.gym.crm.dao.TrainingTypeDao;
 import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.exception.ValidationException;
+import com.gym.crm.metrics.GymCrmMetrics;
+import com.gym.crm.repository.TrainingRepository;
+import com.gym.crm.repository.TrainingTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,16 +26,19 @@ import static org.mockito.Mockito.when;
 class TrainingServiceTest {
 
     @Mock
-    private TrainingDao trainingDao;
+    private TrainingRepository trainingRepository;
 
     @Mock
-    private TrainingTypeDao trainingTypeDao;
+    private TrainingTypeRepository trainingTypeRepository;
+
+    @Mock
+    private GymCrmMetrics metrics;
 
     private TrainingService trainingService;
 
     @BeforeEach
     void setUp() {
-        trainingService = new TrainingService(trainingDao, trainingTypeDao);
+        trainingService = new TrainingService(trainingRepository, trainingTypeRepository, metrics);
     }
 
     private Training validTraining() {
@@ -120,20 +124,21 @@ class TrainingServiceTest {
     @Test
     void addTrainingShouldSaveWhenValid() {
         Training training = validTraining();
-        when(trainingDao.save(training)).thenReturn(training);
+        when(trainingRepository.save(training)).thenReturn(training);
 
         Training saved = trainingService.addTraining(training);
 
         assertEquals(training, saved);
-        verify(trainingDao).save(training);
+        verify(trainingRepository).save(training);
+        verify(metrics).recordTrainingCreated();
     }
 
     @Test
-    void getTraineeTrainingsShouldDelegateToDao() {
+    void getTraineeTrainingsShouldDelegateToRepository() {
         LocalDate from = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 2, 1);
         List<Training> trainings = List.of(validTraining());
-        when(trainingDao.findTraineeTrainings("john.doe", from, to, "trainerName", "CARDIO"))
+        when(trainingRepository.findTraineeTrainings("john.doe", from, to, "trainerName", "CARDIO"))
                 .thenReturn(trainings);
 
         List<Training> result = trainingService.getTraineeTrainings(
@@ -143,11 +148,11 @@ class TrainingServiceTest {
     }
 
     @Test
-    void getTrainerTrainingsShouldDelegateToDao() {
+    void getTrainerTrainingsShouldDelegateToRepository() {
         LocalDate from = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 2, 1);
         List<Training> trainings = List.of(validTraining());
-        when(trainingDao.findTrainerTrainings("carl.coach", from, to, "traineeName"))
+        when(trainingRepository.findTrainerTrainings("carl.coach", from, to, "traineeName"))
                 .thenReturn(trainings);
 
         List<Training> result = trainingService.getTrainerTrainings("carl.coach", from, to, "traineeName");
@@ -156,9 +161,9 @@ class TrainingServiceTest {
     }
 
     @Test
-    void getTrainingTypesShouldDelegateToDao() {
+    void getTrainingTypesShouldDelegateToRepository() {
         List<TrainingType> types = List.of(new TrainingType());
-        when(trainingTypeDao.findAll()).thenReturn(types);
+        when(trainingTypeRepository.findAll()).thenReturn(types);
 
         assertEquals(types, trainingService.getTrainingTypes());
     }
