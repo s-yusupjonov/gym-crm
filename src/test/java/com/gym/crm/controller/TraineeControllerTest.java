@@ -93,7 +93,7 @@ class TraineeControllerTest {
         request.setLastName("Doe");
 
         Trainee saved = traineeWithUsername("john.doe");
-        saved.getUser().setPassword("generatedPass");
+        saved.getUser().setRawPassword("generatedPass");
         when(traineeService.createTraineeProfile(any(Trainee.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/trainees")

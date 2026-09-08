@@ -60,7 +60,7 @@ public class TraineeController {
         Trainee trainee = TraineeMapper.toEntity(request);
         Trainee saved = traineeService.createTraineeProfile(trainee);
         RegistrationResponse response =
-                new RegistrationResponse(saved.getUser().getUsername(), saved.getUser().getPassword());
+                new RegistrationResponse(saved.getUser().getUsername(), saved.getUser().getRawPassword());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

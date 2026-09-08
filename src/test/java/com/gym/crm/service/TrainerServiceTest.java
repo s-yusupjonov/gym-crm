@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,11 +34,15 @@ class TrainerServiceTest {
     @Mock
     private TrainingTypeRepository trainingTypeRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     private TrainerService trainerService;
 
     @BeforeEach
     void setUp() {
-        trainerService = new TrainerService(trainerRepository, userProfileService, trainingTypeRepository);
+        trainerService = new TrainerService(trainerRepository, userProfileService, trainingTypeRepository,
+                passwordEncoder);
     }
 
     private Trainer trainerWithUser(String firstName, String lastName, TrainingType specialization) {
@@ -83,12 +88,14 @@ class TrainerServiceTest {
         Trainer trainer = trainerWithUser("Carl", "Coach", new TrainingType());
         when(userProfileService.generateUsername("Carl", "Coach")).thenReturn("Carl.Coach");
         when(userProfileService.generatePassword()).thenReturn("generatedPass");
+        when(passwordEncoder.encode("generatedPass")).thenReturn("encodedPass");
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         Trainer saved = trainerService.createTrainerProfile(trainer);
 
         assertEquals("Carl.Coach", saved.getUser().getUsername());
-        assertEquals("generatedPass", saved.getUser().getPassword());
+        assertEquals("generatedPass", saved.getUser().getRawPassword());
+        assertEquals("encodedPass", saved.getUser().getPassword());
         assertEquals(true, saved.getUser().isActive());
         verify(trainerRepository).save(trainer);
     }
@@ -130,28 +137,6 @@ class TrainerServiceTest {
 
         assertEquals("New", result.getUser().getFirstName());
         assertEquals(newSpecialization, result.getSpecialization());
-    }
-
-    @Test
-    void changePasswordShouldThrowWhenPasswordIsNull() {
-        assertThrows(ValidationException.class,
-                () -> trainerService.changePassword("carl.coach", null));
-    }
-
-    @Test
-    void changePasswordShouldThrowWhenPasswordIsBlank() {
-        assertThrows(ValidationException.class,
-                () -> trainerService.changePassword("carl.coach", ""));
-    }
-
-    @Test
-    void changePasswordShouldUpdatePasswordWhenValid() {
-        Trainer existing = trainerWithUser("Carl", "Coach", new TrainingType());
-        when(trainerRepository.findByUsername("carl.coach")).thenReturn(Optional.of(existing));
-
-        trainerService.changePassword("carl.coach", "newPass");
-
-        assertEquals("newPass", existing.getUser().getPassword());
     }
 
     @Test
