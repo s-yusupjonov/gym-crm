@@ -18,7 +18,15 @@ public class TokenBlacklistService {
     }
 
     public boolean isBlacklisted(String jti) {
-        return blacklistedTokenIds.containsKey(jti);
+        Instant expiresAt = blacklistedTokenIds.get(jti);
+        if (expiresAt == null) {
+            return false;
+        }
+        if (expiresAt.isBefore(Instant.now())) {
+            blacklistedTokenIds.remove(jti, expiresAt);
+            return false;
+        }
+        return true;
     }
 
     private void purgeExpired() {
