@@ -15,17 +15,20 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI gymCrmOpenApi() {
+        Info info = new Info()
+                .title("Gym CRM API")
+                .version("1.0.0")
+                .description("REST API for managing trainees, trainers and trainings.");
+
+        SecurityScheme bearerScheme = new SecurityScheme()
+                .name(BEARER_SCHEME_NAME)
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
+                .bearerFormat("JWT");
+
         return new OpenAPI()
-                .info(new Info()
-                        .title("Gym CRM API")
-                        .version("1.0.0")
-                        .description("REST API for managing trainees, trainers and trainings."))
+                .info(info)
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME_NAME))
-                .components(new Components()
-                        .addSecuritySchemes(BEARER_SCHEME_NAME, new SecurityScheme()
-                                .name(BEARER_SCHEME_NAME)
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT")));
+                .components(new Components().addSecuritySchemes(BEARER_SCHEME_NAME, bearerScheme));
     }
 }

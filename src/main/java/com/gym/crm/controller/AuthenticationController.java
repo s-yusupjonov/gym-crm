@@ -73,7 +73,7 @@ public class AuthenticationController {
     @ApiOperation(value = "Logout", notes = "Revokes the bearer token used to authenticate this request.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "Logged out"),
-            @ApiResponse(code = 401, message = "Missing or invalid bearer token")
+            @ApiResponse(code = 401, message = "Not authorized")
     })
     public ResponseEntity<Void> logout(HttpServletRequest request) {
         String token = extractToken(request);
