@@ -86,7 +86,10 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void doFilterShouldNotAuthenticateWhenUserIsDisabled() throws Exception {
+    void doFilterShouldStillAuthenticateWhenUserIsDisabled() throws Exception {
+        // A deactivated account must not lose access to an already-issued, non-blacklisted token
+        // (e.g. deleting one's own profile must keep working after deactivation). Login-time
+        // account-status checks are enforced separately in AuthenticationService.
         UserDetails disabledUser = User.withUsername("john.doe").password("encodedPass")
                 .authorities("ROLE_USER").disabled(true).build();
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
@@ -97,7 +100,10 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(request, response, filterChain);
 
-        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(authentication);
+        assertNotNull(authentication.getPrincipal());
+        verify(filterChain).doFilter(request, response);
     }
 
     @Test
