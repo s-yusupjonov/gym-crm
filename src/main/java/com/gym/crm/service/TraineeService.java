@@ -10,6 +10,7 @@ import com.gym.crm.repository.TrainerRepository;
 import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,12 +27,14 @@ public class TraineeService {
     private final TraineeRepository traineeRepository;
     private final TrainerRepository trainerRepository;
     private final UserProfileService userProfileService;
+    private final PasswordEncoder passwordEncoder;
 
     public TraineeService(TraineeRepository traineeRepository, TrainerRepository trainerRepository,
-                          UserProfileService userProfileService) {
+                          UserProfileService userProfileService, PasswordEncoder passwordEncoder) {
         this.traineeRepository = traineeRepository;
         this.trainerRepository = trainerRepository;
         this.userProfileService = userProfileService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -40,7 +43,9 @@ public class TraineeService {
 
         User user = trainee.getUser();
         user.setUsername(userProfileService.generateUsername(user.getFirstName(), user.getLastName()));
-        user.setPassword(userProfileService.generatePassword());
+        String rawPassword = userProfileService.generatePassword();
+        user.setRawPassword(rawPassword);
+        user.setPassword(passwordEncoder.encode(rawPassword));
         user.setActive(true);
 
         Trainee saved = traineeRepository.save(trainee);
@@ -63,16 +68,6 @@ public class TraineeService {
         log.info("Updated trainee profile: username={}", username);
 
         return existing;
-    }
-
-    @Transactional
-    public void changePassword(String username, String newPassword) {
-        ValidationUtils.requireNonBlank(newPassword, "New password must not be blank");
-
-        Trainee trainee = getByUsername(username);
-        trainee.getUser().setPassword(newPassword);
-
-        log.info("Changed password for trainee username={}", username);
     }
 
     @Transactional

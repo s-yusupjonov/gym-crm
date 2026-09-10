@@ -75,7 +75,7 @@ class TrainerControllerTest {
 
         when(trainerService.getSpecializationById(1L)).thenReturn(cardio());
         Trainer saved = trainerWithUsername("carl.coach");
-        saved.getUser().setPassword("generatedPass");
+        saved.getUser().setRawPassword("generatedPass");
         when(trainerService.createTrainerProfile(any(Trainer.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/trainers")

@@ -10,6 +10,7 @@ import com.gym.crm.repository.TrainingTypeRepository;
 import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +24,14 @@ public class TrainerService {
     private final TrainerRepository trainerRepository;
     private final UserProfileService userProfileService;
     private final TrainingTypeRepository trainingTypeRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public TrainerService(TrainerRepository trainerRepository, UserProfileService userProfileService,
-                          TrainingTypeRepository trainingTypeRepository) {
+                          TrainingTypeRepository trainingTypeRepository, PasswordEncoder passwordEncoder) {
         this.trainerRepository = trainerRepository;
         this.userProfileService = userProfileService;
         this.trainingTypeRepository = trainingTypeRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -37,7 +40,9 @@ public class TrainerService {
 
         User user = trainer.getUser();
         user.setUsername(userProfileService.generateUsername(user.getFirstName(), user.getLastName()));
-        user.setPassword(userProfileService.generatePassword());
+        String rawPassword = userProfileService.generatePassword();
+        user.setRawPassword(rawPassword);
+        user.setPassword(passwordEncoder.encode(rawPassword));
         user.setActive(true);
 
         Trainer saved = trainerRepository.save(trainer);
@@ -68,16 +73,6 @@ public class TrainerService {
         }
         return trainingTypeRepository.findById(trainingTypeId)
                 .orElseThrow(() -> new ValidationException("Invalid specialization id: " + trainingTypeId));
-    }
-
-    @Transactional
-    public void changePassword(String username, String newPassword) {
-        ValidationUtils.requireNonBlank(newPassword, "New password must not be blank");
-
-        Trainer trainer = getByUsername(username);
-        trainer.getUser().setPassword(newPassword);
-
-        log.info("Changed password for trainer username={}", username);
     }
 
     @Transactional

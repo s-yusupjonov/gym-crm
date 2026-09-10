@@ -51,6 +51,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleAccountLockedShouldReturnLocked() {
+        ResponseEntity<ErrorResponse> response = handler.handleAccountLocked(
+                new AccountLockedException("Account is temporarily locked due to too many failed login attempts"),
+                request);
+
+        assertEquals(HttpStatus.LOCKED, response.getStatusCode());
+        assertEquals("Account is temporarily locked due to too many failed login attempts",
+                response.getBody().getMessage());
+    }
+
+    @Test
     void handleNotFoundShouldReturnNotFound() {
         ResponseEntity<ErrorResponse> response =
                 handler.handleNotFound(new EntityNotFoundException("Trainee not found: john.doe"), request);

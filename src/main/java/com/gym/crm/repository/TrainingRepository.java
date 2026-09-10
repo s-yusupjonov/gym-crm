@@ -17,11 +17,13 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
             + "join fetch t.trainer tr join fetch tr.user "
             + "join fetch t.trainingType "
             + "where te.user.username = :traineeUsername "
-            + "and (:fromDate is null or t.trainingDate >= :fromDate) "
-            + "and (:toDate is null or t.trainingDate <= :toDate) "
-            + "and (:trainerName is null or tr.user.firstName like concat('%', :trainerName, '%') "
-            + "or tr.user.lastName like concat('%', :trainerName, '%')) "
-            + "and (:trainingTypeName is null or t.trainingType.trainingTypeName = :trainingTypeName)")
+            + "and (cast(:fromDate as date) is null or t.trainingDate >= cast(:fromDate as date)) "
+            + "and (cast(:toDate as date) is null or t.trainingDate <= cast(:toDate as date)) "
+            + "and (cast(:trainerName as string) is null "
+            + "or tr.user.firstName like concat('%', cast(:trainerName as string), '%') "
+            + "or tr.user.lastName like concat('%', cast(:trainerName as string), '%')) "
+            + "and (cast(:trainingTypeName as string) is null "
+            + "or t.trainingType.trainingTypeName = cast(:trainingTypeName as string))")
     List<Training> findTraineeTrainings(@Param("traineeUsername") String traineeUsername,
                                         @Param("fromDate") LocalDate fromDate,
                                         @Param("toDate") LocalDate toDate,
@@ -33,10 +35,11 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
             + "join fetch t.trainer tr join fetch tr.user "
             + "join fetch t.trainingType "
             + "where tr.user.username = :trainerUsername "
-            + "and (:fromDate is null or t.trainingDate >= :fromDate) "
-            + "and (:toDate is null or t.trainingDate <= :toDate) "
-            + "and (:traineeName is null or te.user.firstName like concat('%', :traineeName, '%') "
-            + "or te.user.lastName like concat('%', :traineeName, '%'))")
+            + "and (cast(:fromDate as date) is null or t.trainingDate >= cast(:fromDate as date)) "
+            + "and (cast(:toDate as date) is null or t.trainingDate <= cast(:toDate as date)) "
+            + "and (cast(:traineeName as string) is null "
+            + "or te.user.firstName like concat('%', cast(:traineeName as string), '%') "
+            + "or te.user.lastName like concat('%', cast(:traineeName as string), '%'))")
     List<Training> findTrainerTrainings(@Param("trainerUsername") String trainerUsername,
                                         @Param("fromDate") LocalDate fromDate,
                                         @Param("toDate") LocalDate toDate,

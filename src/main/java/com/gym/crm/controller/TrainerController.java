@@ -52,7 +52,7 @@ public class TrainerController {
         Trainer trainer = TrainerMapper.toEntity(request, specialization);
         Trainer saved = trainerService.createTrainerProfile(trainer);
         RegistrationResponse response =
-                new RegistrationResponse(saved.getUser().getUsername(), saved.getUser().getPassword());
+                new RegistrationResponse(saved.getUser().getUsername(), saved.getUser().getRawPassword());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

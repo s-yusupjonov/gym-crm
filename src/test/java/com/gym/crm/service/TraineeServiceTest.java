@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,11 +35,15 @@ class TraineeServiceTest {
     @Mock
     private UserProfileService userProfileService;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     private TraineeService traineeService;
 
     @BeforeEach
     void setUp() {
-        traineeService = new TraineeService(traineeRepository, trainerRepository, userProfileService);
+        traineeService = new TraineeService(traineeRepository, trainerRepository, userProfileService,
+                passwordEncoder);
     }
 
     private Trainee traineeWithUser(String firstName, String lastName) {
@@ -76,12 +81,14 @@ class TraineeServiceTest {
         Trainee trainee = traineeWithUser("John", "Doe");
         when(userProfileService.generateUsername("John", "Doe")).thenReturn("John.Doe");
         when(userProfileService.generatePassword()).thenReturn("generatedPass");
+        when(passwordEncoder.encode("generatedPass")).thenReturn("encodedPass");
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         Trainee saved = traineeService.createTraineeProfile(trainee);
 
         assertEquals("John.Doe", saved.getUser().getUsername());
-        assertEquals("generatedPass", saved.getUser().getPassword());
+        assertEquals("generatedPass", saved.getUser().getRawPassword());
+        assertEquals("encodedPass", saved.getUser().getPassword());
         assertTrue(saved.getUser().isActive());
         verify(traineeRepository).save(trainee);
     }
@@ -122,28 +129,6 @@ class TraineeServiceTest {
 
         assertEquals("New", result.getUser().getFirstName());
         assertEquals("New Address", result.getAddress());
-    }
-
-    @Test
-    void changePasswordShouldThrowWhenPasswordIsNull() {
-        assertThrows(ValidationException.class,
-                () -> traineeService.changePassword("john.doe", null));
-    }
-
-    @Test
-    void changePasswordShouldThrowWhenPasswordIsBlank() {
-        assertThrows(ValidationException.class,
-                () -> traineeService.changePassword("john.doe", "   "));
-    }
-
-    @Test
-    void changePasswordShouldUpdatePasswordWhenValid() {
-        Trainee existing = traineeWithUser("John", "Doe");
-        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
-
-        traineeService.changePassword("john.doe", "newPass");
-
-        assertEquals("newPass", existing.getUser().getPassword());
     }
 
     @Test

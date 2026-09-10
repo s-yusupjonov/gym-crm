@@ -1,6 +1,7 @@
 package com.gym.crm.dto;
 
 import com.gym.crm.dto.auth.ChangeLoginRequest;
+import com.gym.crm.dto.auth.LoginRequest;
 import com.gym.crm.dto.common.ActiveStatusRequest;
 import com.gym.crm.dto.trainee.TraineeRegistrationRequest;
 import com.gym.crm.dto.trainee.UpdateTraineeRequest;
@@ -221,6 +222,27 @@ class RequestValidationTest {
     @Test
     void changeLoginRequestShouldRejectBlankNewPassword() {
         ChangeLoginRequest request = new ChangeLoginRequest("john.doe", "oldPass", "");
+
+        assertEquals(1, validator.validate(request).size());
+    }
+
+    @Test
+    void loginRequestShouldBeValidWithUsernameAndPassword() {
+        LoginRequest request = new LoginRequest("john.doe", "secret");
+
+        assertTrue(validator.validate(request).isEmpty());
+    }
+
+    @Test
+    void loginRequestShouldRejectBlankUsername() {
+        LoginRequest request = new LoginRequest("", "secret");
+
+        assertEquals(1, validator.validate(request).size());
+    }
+
+    @Test
+    void loginRequestShouldRejectBlankPassword() {
+        LoginRequest request = new LoginRequest("john.doe", "");
 
         assertEquals(1, validator.validate(request).size());
     }
