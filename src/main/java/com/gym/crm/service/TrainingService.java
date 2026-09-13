@@ -1,7 +1,11 @@
 package com.gym.crm.service;
 
+import com.gym.crm.client.WorkloadActionType;
+import com.gym.crm.client.WorkloadClient;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
+import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.exception.IllegalTrainingStateException;
 import com.gym.crm.exception.ValidationException;
 import com.gym.crm.metrics.GymCrmMetrics;
 import com.gym.crm.repository.TrainingRepository;
@@ -23,12 +27,14 @@ public class TrainingService {
     private final TrainingRepository trainingRepository;
     private final TrainingTypeRepository trainingTypeRepository;
     private final GymCrmMetrics metrics;
+    private final WorkloadClient workloadClient;
 
     public TrainingService(TrainingRepository trainingRepository, TrainingTypeRepository trainingTypeRepository,
-                           GymCrmMetrics metrics) {
+                           GymCrmMetrics metrics, WorkloadClient workloadClient) {
         this.trainingRepository = trainingRepository;
         this.trainingTypeRepository = trainingTypeRepository;
         this.metrics = metrics;
+        this.workloadClient = workloadClient;
     }
 
     @Transactional
@@ -40,7 +46,25 @@ public class TrainingService {
         log.info("Added training: name={}, traineeId={}, trainerId={}",
                 saved.getTrainingName(), saved.getTrainee().getId(), saved.getTrainer().getId());
 
+        notifyWorkloadService(saved, WorkloadActionType.ADD);
+
         return saved;
+    }
+
+    @Transactional
+    public void deleteTraining(Long id) {
+        Training training = trainingRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Training not found: " + id));
+
+        if (!training.getTrainingDate().isAfter(LocalDate.now())) {
+            throw new IllegalTrainingStateException("Cannot cancel a training that has already occurred");
+        }
+
+        trainingRepository.delete(training);
+        metrics.recordTrainingCancelled();
+        log.info("Cancelled training: id={}, name={}", training.getId(), training.getTrainingName());
+
+        notifyWorkloadService(training, WorkloadActionType.DELETE);
     }
 
     @Transactional(readOnly = true)
@@ -58,6 +82,15 @@ public class TrainingService {
     @Transactional(readOnly = true)
     public List<TrainingType> getTrainingTypes() {
         return trainingTypeRepository.findAll();
+    }
+
+    private void notifyWorkloadService(Training training, WorkloadActionType actionType) {
+        try {
+            workloadClient.notify(training, actionType);
+        } catch (Exception ex) {
+            log.warn("Unexpected failure notifying trainer-workload-service: trainingId={} actionType={} reason={}",
+                    training.getId(), actionType, ex.getMessage());
+        }
     }
 
     private void validate(Training training) {

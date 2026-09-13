@@ -1,9 +1,13 @@
 package com.gym.crm.service;
 
+import com.gym.crm.client.WorkloadActionType;
+import com.gym.crm.client.WorkloadClient;
 import com.gym.crm.domain.Trainee;
 import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
+import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.exception.IllegalTrainingStateException;
 import com.gym.crm.exception.ValidationException;
 import com.gym.crm.metrics.GymCrmMetrics;
 import com.gym.crm.repository.TrainingRepository;
@@ -16,9 +20,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,11 +43,14 @@ class TrainingServiceTest {
     @Mock
     private GymCrmMetrics metrics;
 
+    @Mock
+    private WorkloadClient workloadClient;
+
     private TrainingService trainingService;
 
     @BeforeEach
     void setUp() {
-        trainingService = new TrainingService(trainingRepository, trainingTypeRepository, metrics);
+        trainingService = new TrainingService(trainingRepository, trainingTypeRepository, metrics, workloadClient);
     }
 
     private Training validTraining() {
@@ -131,6 +143,98 @@ class TrainingServiceTest {
         assertEquals(training, saved);
         verify(trainingRepository).save(training);
         verify(metrics).recordTrainingCreated();
+    }
+
+    @Test
+    void addTrainingShouldNotifyWorkloadServiceWithAddAction() {
+        Training training = validTraining();
+        when(trainingRepository.save(training)).thenReturn(training);
+
+        trainingService.addTraining(training);
+
+        verify(workloadClient).notify(training, WorkloadActionType.ADD);
+    }
+
+    @Test
+    void addTrainingShouldSucceedWhenWorkloadClientFails() {
+        Training training = validTraining();
+        when(trainingRepository.save(training)).thenReturn(training);
+        doThrow(new RuntimeException("workload service unavailable"))
+                .when(workloadClient).notify(training, WorkloadActionType.ADD);
+
+        Training saved = assertDoesNotThrow(() -> trainingService.addTraining(training));
+
+        assertEquals(training, saved);
+        verify(trainingRepository).save(training);
+    }
+
+    @Test
+    void deleteTrainingShouldThrowWhenTrainingNotFound() {
+        when(trainingRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> trainingService.deleteTraining(99L));
+        verify(trainingRepository, never()).delete(any(Training.class));
+    }
+
+    @Test
+    void deleteTrainingShouldThrowWhenTrainingDateIsNotInFuture() {
+        Training training = validTraining();
+        training.setId(5L);
+        training.setTrainingDate(LocalDate.now());
+        when(trainingRepository.findById(5L)).thenReturn(Optional.of(training));
+
+        assertThrows(IllegalTrainingStateException.class, () -> trainingService.deleteTraining(5L));
+        verify(trainingRepository, never()).delete(any(Training.class));
+    }
+
+    @Test
+    void deleteTrainingShouldThrowWhenTrainingDateIsInThePast() {
+        Training training = validTraining();
+        training.setId(6L);
+        training.setTrainingDate(LocalDate.now().minusDays(1));
+        when(trainingRepository.findById(6L)).thenReturn(Optional.of(training));
+
+        assertThrows(IllegalTrainingStateException.class, () -> trainingService.deleteTraining(6L));
+        verify(trainingRepository, never()).delete(any(Training.class));
+    }
+
+    @Test
+    void deleteTrainingShouldDeleteWhenDateIsInTheFuture() {
+        Training training = validTraining();
+        training.setId(7L);
+        training.setTrainingDate(LocalDate.now().plusDays(1));
+        when(trainingRepository.findById(7L)).thenReturn(Optional.of(training));
+
+        trainingService.deleteTraining(7L);
+
+        verify(trainingRepository).delete(training);
+        verify(metrics).recordTrainingCancelled();
+    }
+
+    @Test
+    void deleteTrainingShouldNotifyWorkloadServiceWithDeleteAction() {
+        Training training = validTraining();
+        training.setId(8L);
+        training.setTrainingDate(LocalDate.now().plusDays(1));
+        when(trainingRepository.findById(8L)).thenReturn(Optional.of(training));
+
+        trainingService.deleteTraining(8L);
+
+        verify(workloadClient).notify(training, WorkloadActionType.DELETE);
+    }
+
+    @Test
+    void deleteTrainingShouldSucceedWhenWorkloadClientFails() {
+        Training training = validTraining();
+        training.setId(9L);
+        training.setTrainingDate(LocalDate.now().plusDays(1));
+        when(trainingRepository.findById(9L)).thenReturn(Optional.of(training));
+        doThrow(new RuntimeException("workload service unavailable"))
+                .when(workloadClient).notify(training, WorkloadActionType.DELETE);
+
+        assertDoesNotThrow(() -> trainingService.deleteTraining(9L));
+
+        verify(trainingRepository).delete(training);
     }
 
     @Test

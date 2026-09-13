@@ -12,6 +12,7 @@ public class GymCrmMetrics {
     private final Counter authenticationSuccessCounter;
     private final Counter authenticationFailureCounter;
     private final Counter trainingsCreatedCounter;
+    private final Counter trainingsCancelledCounter;
 
     public GymCrmMetrics(MeterRegistry meterRegistry) {
         this.authenticationSuccessCounter = Counter.builder("gym_crm.authentication.attempts")
@@ -25,6 +26,9 @@ public class GymCrmMetrics {
         this.trainingsCreatedCounter = Counter.builder("gym_crm.trainings.created")
                 .description("Number of trainings created")
                 .register(meterRegistry);
+        this.trainingsCancelledCounter = Counter.builder("gym_crm.trainings.cancelled")
+                .description("Number of trainings cancelled")
+                .register(meterRegistry);
     }
 
     public void recordAuthenticationSuccess() {
@@ -37,5 +41,9 @@ public class GymCrmMetrics {
 
     public void recordTrainingCreated() {
         trainingsCreatedCounter.increment();
+    }
+
+    public void recordTrainingCancelled() {
+        trainingsCancelledCounter.increment();
     }
 }
