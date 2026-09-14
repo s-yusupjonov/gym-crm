@@ -7,7 +7,7 @@ import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
 import com.gym.crm.repository.TrainerRepository;
 import com.gym.crm.repository.TrainingTypeRepository;
-import com.gym.crm.util.ValidationUtils;
+import com.gym.crm.util.EntityValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -100,24 +100,10 @@ public class TrainerService {
     }
 
     private void validateForCreate(Trainer trainer) {
-        if (trainer.getUser() == null) {
-            throw new ValidationException("User details are required");
-        }
-        if (ValidationUtils.isBlank(trainer.getUser().getFirstName())) {
-            throw new ValidationException("First name is required");
-        }
-        if (ValidationUtils.isBlank(trainer.getUser().getLastName())) {
-            throw new ValidationException("Last name is required");
-        }
-        if (trainer.getSpecialization() == null) {
-            throw new ValidationException("Specialization is required");
-        }
+        EntityValidator.validate(trainer);
     }
 
     private void validateForUpdate(Trainer trainer) {
-        if (trainer.getUser() == null || ValidationUtils.isBlank(trainer.getUser().getFirstName())
-                || ValidationUtils.isBlank(trainer.getUser().getLastName())) {
-            throw new ValidationException("First name and last name are required");
-        }
+        EntityValidator.validate(trainer);
     }
 }

@@ -10,10 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-@Component
+@Service
 public class WorkloadClientImpl implements WorkloadClient {
 
     private static final Logger log = LoggerFactory.getLogger(WorkloadClientImpl.class);

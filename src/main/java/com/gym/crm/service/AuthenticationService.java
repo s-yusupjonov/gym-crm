@@ -4,11 +4,11 @@ import com.gym.crm.domain.User;
 import com.gym.crm.exception.AccountLockedException;
 import com.gym.crm.exception.AuthenticationException;
 import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.exception.ValidationException;
 import com.gym.crm.metrics.GymCrmMetrics;
 import com.gym.crm.repository.UserRepository;
 import com.gym.crm.security.JwtService;
 import com.gym.crm.security.LoginAttemptService;
-import com.gym.crm.util.ValidationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -69,7 +69,9 @@ public class AuthenticationService {
     public void changePassword(String username, String oldPassword, String newPassword) {
         authenticate(username, oldPassword);
 
-        ValidationUtils.requireNonBlank(newPassword, "New password must not be blank");
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ValidationException("New password must not be blank");
+        }
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + username));

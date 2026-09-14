@@ -6,11 +6,10 @@ import com.gym.crm.domain.Training;
 import com.gym.crm.domain.TrainingType;
 import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.IllegalTrainingStateException;
-import com.gym.crm.exception.ValidationException;
 import com.gym.crm.metrics.GymCrmMetrics;
 import com.gym.crm.repository.TrainingRepository;
 import com.gym.crm.repository.TrainingTypeRepository;
-import com.gym.crm.util.ValidationUtils;
+import com.gym.crm.util.EntityValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -94,23 +93,6 @@ public class TrainingService {
     }
 
     private void validate(Training training) {
-        if (training.getTrainee() == null) {
-            throw new ValidationException("Trainee is required");
-        }
-        if (training.getTrainer() == null) {
-            throw new ValidationException("Trainer is required");
-        }
-        if (ValidationUtils.isBlank(training.getTrainingName())) {
-            throw new ValidationException("Training name is required");
-        }
-        if (training.getTrainingType() == null) {
-            throw new ValidationException("Training type is required");
-        }
-        if (training.getTrainingDate() == null) {
-            throw new ValidationException("Training date is required");
-        }
-        if (training.getTrainingDuration() <= 0) {
-            throw new ValidationException("Training duration must be positive");
-        }
+        EntityValidator.validate(training);
     }
 }
