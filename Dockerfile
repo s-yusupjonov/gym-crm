@@ -1,14 +1,6 @@
 ## --- Build stage: compile & package the executable jar ---
 FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY securetower-ca.crt /usr/local/share/ca-certificates/securetower-ca.crt
-RUN apt-get update && apt-get install -y ca-certificates \
-    && update-ca-certificates \
-    && keytool -importcert -noprompt -trustcacerts \
-        -alias securetower-ca \
-        -file /usr/local/share/ca-certificates/securetower-ca.crt \
-        -keystore "$JAVA_HOME/lib/security/cacerts" \
-        -storepass changeit
 COPY pom.xml .
 RUN mvn -B dependency:go-offline
 COPY src ./src

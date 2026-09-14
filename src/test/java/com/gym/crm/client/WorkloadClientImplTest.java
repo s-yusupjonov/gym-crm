@@ -41,7 +41,8 @@ class WorkloadClientImplTest {
         mockServer = MockRestServiceServer.bindTo(builder).build();
 
         InternalServiceTokenProvider tokenProvider = new InternalServiceTokenProvider(SECRET, 60_000L);
-        workloadClient = new WorkloadClientImpl(builder, tokenProvider);
+        RestClient restClient = builder.build();
+        workloadClient = new WorkloadClientImpl(restClient, tokenProvider);
 
         MDC.put(LoggingConstants.TRANSACTION_ID_MDC_KEY, "txn-123");
     }
