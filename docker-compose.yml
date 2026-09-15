@@ -17,6 +17,23 @@ services:
       timeout: 3s
       retries: 10
 
+  activemq:
+    image: apache/activemq-classic:6.1.8
+    container_name: gym-crm-activemq
+    restart: unless-stopped
+    environment:
+      ACTIVEMQ_CONNECTION_USER: admin
+      ACTIVEMQ_CONNECTION_PASSWORD: admin
+    ports:
+      - "61616:61616" # OpenWire
+      - "8161:8161"   # Web console (http://localhost:8161, admin/admin)
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8161"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
   app:
     build: .
     container_name: gym-crm-app
@@ -24,15 +41,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      activemq:
+        condition: service_healthy
     environment:
-      # Inside the Docker network Postgres is reachable at its service name "postgres" on its
-      # internal port 5432, so the "dev" profile's host/port defaults are overridden here.
+      # Inside the Docker network Postgres/ActiveMQ are reachable at their service names on their
+      # internal ports, so the "dev" profile's host/port defaults are overridden here.
       SPRING_PROFILES_ACTIVE: dev
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_NAME: gymcrm
       DB_USERNAME: gymcrm
       DB_PASSWORD: gymcrm
+      ACTIVEMQ_BROKER_URL: tcp://activemq:61616
+      ACTIVEMQ_USER: admin
+      ACTIVEMQ_PASSWORD: admin
     ports:
       - "8080:8080"
 
