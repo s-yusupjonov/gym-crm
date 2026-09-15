@@ -9,6 +9,7 @@ import com.gym.crm.domain.TrainingType;
 import com.gym.crm.domain.User;
 import com.gym.crm.dto.training.AddTrainingRequest;
 import com.gym.crm.exception.EntityNotFoundException;
+import com.gym.crm.exception.IllegalTrainingStateException;
 import com.gym.crm.service.TraineeService;
 import com.gym.crm.service.TrainerService;
 import com.gym.crm.service.TrainingService;
@@ -27,9 +28,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -153,6 +156,31 @@ class TrainingControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(trainingService, never()).addTraining(any());
+    }
+
+    @Test
+    void deleteTrainingShouldReturnOkWhenCancelled() throws Exception {
+        mockMvc.perform(delete("/api/trainings/{id}", 1L))
+                .andExpect(status().isOk());
+
+        verify(trainingService).deleteTraining(1L);
+    }
+
+    @Test
+    void deleteTrainingShouldReturnNotFoundWhenTrainingMissing() throws Exception {
+        doThrow(new EntityNotFoundException("Training not found: 99")).when(trainingService).deleteTraining(99L);
+
+        mockMvc.perform(delete("/api/trainings/{id}", 99L))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteTrainingShouldReturnConflictWhenTrainingAlreadyOccurred() throws Exception {
+        doThrow(new IllegalTrainingStateException("Cannot cancel a training that has already occurred"))
+                .when(trainingService).deleteTraining(2L);
+
+        mockMvc.perform(delete("/api/trainings/{id}", 2L))
+                .andExpect(status().isConflict());
     }
 
     @Test

@@ -7,7 +7,7 @@ import com.gym.crm.exception.EntityNotFoundException;
 import com.gym.crm.exception.ValidationException;
 import com.gym.crm.repository.TraineeRepository;
 import com.gym.crm.repository.TrainerRepository;
-import com.gym.crm.util.ValidationUtils;
+import com.gym.crm.util.EntityValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -115,21 +115,10 @@ public class TraineeService {
     }
 
     private void validateForCreate(Trainee trainee) {
-        if (trainee.getUser() == null) {
-            throw new ValidationException("User details are required");
-        }
-        if (ValidationUtils.isBlank(trainee.getUser().getFirstName())) {
-            throw new ValidationException("First name is required");
-        }
-        if (ValidationUtils.isBlank(trainee.getUser().getLastName())) {
-            throw new ValidationException("Last name is required");
-        }
+        EntityValidator.validate(trainee);
     }
 
     private void validateForUpdate(Trainee trainee) {
-        if (trainee.getUser() == null || ValidationUtils.isBlank(trainee.getUser().getFirstName())
-                || ValidationUtils.isBlank(trainee.getUser().getLastName())) {
-            throw new ValidationException("First name and last name are required");
-        }
+        EntityValidator.validate(trainee);
     }
 }

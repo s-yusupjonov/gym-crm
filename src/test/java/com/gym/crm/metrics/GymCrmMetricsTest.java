@@ -45,4 +45,11 @@ class GymCrmMetricsTest {
 
         assertEquals(2.0, meterRegistry.get("gym_crm.trainings.created").counter().count());
     }
+
+    @Test
+    void recordTrainingCancelledShouldIncrementTrainingsCancelledCounter() {
+        metrics.recordTrainingCancelled();
+
+        assertEquals(1.0, meterRegistry.get("gym_crm.trainings.cancelled").counter().count());
+    }
 }

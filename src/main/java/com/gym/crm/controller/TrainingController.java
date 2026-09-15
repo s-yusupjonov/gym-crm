@@ -23,6 +23,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,6 +66,21 @@ public class TrainingController {
 
         Training training = TrainingMapper.toEntity(request, trainee, trainer);
         trainingService.addTraining(training);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    @ApiOperation(value = "Cancel training", notes = "Cancels a training that has not yet occurred. "
+            + "Trainings whose date has already passed cannot be cancelled.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Training cancelled"),
+            @ApiResponse(code = 404, message = "Training not found"),
+            @ApiResponse(code = 409, message = "Training has already occurred and cannot be cancelled")
+    })
+    public ResponseEntity<Void> deleteTraining(
+            @ApiParam(value = "Training id", required = true) @PathVariable Long id) {
+        trainingService.deleteTraining(id);
 
         return ResponseEntity.ok().build();
     }

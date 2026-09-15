@@ -45,6 +45,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, ex);
     }
 
+    @ExceptionHandler(IllegalTrainingStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalTrainingState(IllegalTrainingStateException ex,
+                                                                    HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request, ex);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                       HttpServletRequest request) {

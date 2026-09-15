@@ -80,6 +80,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleIllegalTrainingStateShouldReturnConflict() {
+        ResponseEntity<ErrorResponse> response = handler.handleIllegalTrainingState(
+                new IllegalTrainingStateException("Cannot cancel a training that has already occurred"), request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("Cannot cancel a training that has already occurred", response.getBody().getMessage());
+    }
+
+    @Test
     void handleConstraintViolationShouldReturnBadRequestWithEmptyFieldErrors() {
         ConstraintViolationException ex = new ConstraintViolationException(Set.of());
 
