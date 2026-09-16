@@ -1,50 +1,58 @@
 package com.gym.crm.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.User;
 import com.gym.crm.dto.workload.WorkloadEventRequest;
 import com.gym.crm.logging.LoggingConstants;
-import com.gym.crm.security.InternalServiceTokenProvider;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.springframework.http.HttpHeaders;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 
 @Service
 public class WorkloadClientImpl implements WorkloadClient {
 
     private static final Logger log = LoggerFactory.getLogger(WorkloadClientImpl.class);
-    private static final String WORKLOAD_PATH = "/api/trainer-workloads";
 
-    private final RestClient restClient;
-    private final InternalServiceTokenProvider internalServiceTokenProvider;
+    static final String TRANSACTION_ID_PROPERTY = "transactionId";
 
-    public WorkloadClientImpl(RestClient workloadRestClient,
-                              InternalServiceTokenProvider internalServiceTokenProvider) {
-        this.restClient = workloadRestClient;
-        this.internalServiceTokenProvider = internalServiceTokenProvider;
+    private final JmsTemplate jmsTemplate;
+    private final ObjectMapper objectMapper;
+    private final String workloadEventsQueue;
+
+    public WorkloadClientImpl(JmsTemplate jmsTemplate,
+                              ObjectMapper objectMapper,
+                              @Value("${activemq.queue.workload-events}") String workloadEventsQueue) {
+        this.jmsTemplate = jmsTemplate;
+        this.objectMapper = objectMapper;
+        this.workloadEventsQueue = workloadEventsQueue;
     }
 
     @Override
-    @CircuitBreaker(name = "trainerWorkloadService", fallbackMethod = "onWorkloadNotificationFailure")
     public void notify(Training training, WorkloadActionType actionType) {
         WorkloadEventRequest request = buildRequest(training, actionType);
+        String transactionId = MDC.get(LoggingConstants.TRANSACTION_ID_MDC_KEY);
+        String payload = toJson(request);
 
-        restClient.post()
-                .uri(WORKLOAD_PATH)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + internalServiceTokenProvider.generateToken())
-                .header(LoggingConstants.TRANSACTION_ID_HEADER, MDC.get(LoggingConstants.TRANSACTION_ID_MDC_KEY))
-                .body(request)
-                .retrieve()
-                .toBodilessEntity();
+        jmsTemplate.send(workloadEventsQueue, session -> buildMessage(session, payload, transactionId));
+
+        log.info("Published workload event: transactionId={} queue={} trainingId={} actionType={}",
+                transactionId, workloadEventsQueue, training.getId(), actionType);
     }
 
-    void onWorkloadNotificationFailure(Training training, WorkloadActionType actionType, Throwable throwable) {
-        log.warn("Workload notification failed and was skipped: transactionId={} trainingId={} actionType={} reason={}",
-                MDC.get(LoggingConstants.TRANSACTION_ID_MDC_KEY), training.getId(), actionType, throwable.getMessage());
+    private TextMessage buildMessage(Session session, String payload, String transactionId) throws JMSException {
+        TextMessage message = session.createTextMessage(payload);
+        if (transactionId != null) {
+            message.setStringProperty(TRANSACTION_ID_PROPERTY, transactionId);
+        }
+        return message;
     }
 
     private WorkloadEventRequest buildRequest(Training training, WorkloadActionType actionType) {
@@ -59,5 +67,13 @@ public class WorkloadClientImpl implements WorkloadClient {
         request.setTrainingDuration(training.getTrainingDuration());
         request.setActionType(actionType);
         return request;
+    }
+
+    private String toJson(WorkloadEventRequest request) {
+        try {
+            return objectMapper.writeValueAsString(request);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Failed to serialize workload event", ex);
+        }
     }
 }

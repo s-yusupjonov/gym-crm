@@ -1,5 +1,6 @@
 package com.gym.crm.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -7,58 +8,53 @@ import com.gym.crm.domain.Trainer;
 import com.gym.crm.domain.Training;
 import com.gym.crm.domain.User;
 import com.gym.crm.logging.LoggingConstants;
-import com.gym.crm.security.InternalServiceTokenProvider;
-import org.hamcrest.Matchers;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestClient;
+import org.springframework.jms.JmsException;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
 
 import java.time.LocalDate;
-import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class WorkloadClientImplTest {
 
-    private static final String SECRET = "unit-test-internal-secret-key-that-is-long-enough-for-hs256";
+    private static final String QUEUE_NAME = "workload.events.queue";
 
-    private MockRestServiceServer mockServer;
+    @Mock
+    private JmsTemplate jmsTemplate;
+
+    private ObjectMapper objectMapper;
     private WorkloadClientImpl workloadClient;
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new ObjectMapper()
+        objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
-
-        RestClient.Builder builder = RestClient.builder()
-                .baseUrl("http://trainer-workload-service")
-                .messageConverters(converters -> {
-                    converters.removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
-                    converters.add(jacksonConverter);
-                });
-        mockServer = MockRestServiceServer.bindTo(builder).build();
-
-        InternalServiceTokenProvider tokenProvider = new InternalServiceTokenProvider(SECRET, 60_000L);
-        RestClient restClient = builder.build();
-        workloadClient = new WorkloadClientImpl(restClient, tokenProvider);
-
-        MDC.put(LoggingConstants.TRANSACTION_ID_MDC_KEY, "txn-123");
+        workloadClient = new WorkloadClientImpl(jmsTemplate, objectMapper, QUEUE_NAME);
     }
 
     @AfterEach
@@ -67,41 +63,81 @@ class WorkloadClientImplTest {
     }
 
     @Test
-    void notifyShouldPostExpectedBodyAndHeaders() {
-        mockServer.expect(requestTo("http://trainer-workload-service/api/trainer-workloads"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header(HttpHeaders.AUTHORIZATION, Matchers.startsWith("Bearer ")))
-                .andExpect(header(LoggingConstants.TRANSACTION_ID_HEADER, "txn-123"))
-                .andExpect(jsonPath("$.trainerUsername").value("carl.coach"))
-                .andExpect(jsonPath("$.trainerFirstName").value("Carl"))
-                .andExpect(jsonPath("$.trainerLastName").value("Coach"))
-                .andExpect(jsonPath("$.isActive").value(true))
-                .andExpect(jsonPath("$.trainingDate").value("2026-08-01"))
-                .andExpect(jsonPath("$.trainingDuration").value(60))
-                .andExpect(jsonPath("$.actionType").value("ADD"))
-                .andRespond(withSuccess());
+    void notifyShouldSendMessageWithExpectedPayloadAndTransactionIdProperty() throws JMSException {
+        MDC.put(LoggingConstants.TRANSACTION_ID_MDC_KEY, "txn-123");
+
+        Session session = mock(Session.class);
+        TextMessage textMessage = mock(TextMessage.class);
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        when(session.createTextMessage(payloadCaptor.capture())).thenReturn(textMessage);
+
+        ArgumentCaptor<MessageCreator> messageCreatorCaptor = ArgumentCaptor.forClass(MessageCreator.class);
 
         workloadClient.notify(validTraining(), WorkloadActionType.ADD);
 
-        mockServer.verify();
+        verify(jmsTemplate).send(eq(QUEUE_NAME), messageCreatorCaptor.capture());
+
+        Message createdMessage = messageCreatorCaptor.getValue().createMessage(session);
+
+        assertSame(textMessage, createdMessage);
+        verify(textMessage).setStringProperty(WorkloadClientImpl.TRANSACTION_ID_PROPERTY, "txn-123");
+
+        JsonNode payload = readPayload(payloadCaptor.getValue());
+        assertEquals("carl.coach", payload.get("trainerUsername").asText());
+        assertEquals("Carl", payload.get("trainerFirstName").asText());
+        assertEquals("Coach", payload.get("trainerLastName").asText());
+        assertTrue(payload.get("isActive").asBoolean());
+        assertEquals("2026-08-01", payload.get("trainingDate").asText());
+        assertEquals(60, payload.get("trainingDuration").asInt());
+        assertEquals("ADD", payload.get("actionType").asText());
     }
 
     @Test
-    void notifyShouldPropagateServerErrorWhenCircuitBreakerIsNotEngaged() {
-        mockServer.expect(requestTo("http://trainer-workload-service/api/trainer-workloads"))
-                .andRespond(withServerError());
+    void notifyShouldNotSetTransactionIdPropertyWhenMdcIsEmpty() throws JMSException {
+        Session session = mock(Session.class);
+        TextMessage textMessage = mock(TextMessage.class);
+        when(session.createTextMessage(any(String.class))).thenReturn(textMessage);
 
-        assertThrows(HttpServerErrorException.class,
-                () -> workloadClient.notify(validTraining(), WorkloadActionType.DELETE));
+        ArgumentCaptor<MessageCreator> messageCreatorCaptor = ArgumentCaptor.forClass(MessageCreator.class);
+
+        workloadClient.notify(validTraining(), WorkloadActionType.DELETE);
+
+        verify(jmsTemplate).send(eq(QUEUE_NAME), messageCreatorCaptor.capture());
+
+        messageCreatorCaptor.getValue().createMessage(session);
+
+        verifyNoMoreInteractions(textMessage);
     }
 
     @Test
-    void fallbackShouldSwallowFailureAndNotThrow() {
-        Training training = validTraining();
-        training.setId(42L);
+    void notifyShouldPropagateExceptionWhenJmsSendFails() {
+        doThrow(new JmsException("broker unavailable") {
+        }).when(jmsTemplate).send(eq(QUEUE_NAME), any(MessageCreator.class));
 
-        assertDoesNotThrow(() -> workloadClient.onWorkloadNotificationFailure(
-                training, WorkloadActionType.ADD, new TimeoutException("call timed out")));
+        assertThrows(JmsException.class,
+                () -> workloadClient.notify(validTraining(), WorkloadActionType.ADD));
+    }
+
+    @Test
+    void buildMessageShouldPropagateJmsExceptionFromSession() throws JMSException {
+        Session session = mock(Session.class);
+        when(session.createTextMessage(any(String.class))).thenThrow(new JMSException("cannot create message"));
+
+        ArgumentCaptor<MessageCreator> messageCreatorCaptor = ArgumentCaptor.forClass(MessageCreator.class);
+
+        workloadClient.notify(validTraining(), WorkloadActionType.ADD);
+
+        verify(jmsTemplate).send(eq(QUEUE_NAME), messageCreatorCaptor.capture());
+
+        assertThrows(JMSException.class, () -> messageCreatorCaptor.getValue().createMessage(session));
+    }
+
+    private JsonNode readPayload(String json) {
+        try {
+            return objectMapper.readTree(json);
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private Training validTraining() {
