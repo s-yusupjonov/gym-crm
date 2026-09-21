@@ -1,29 +1,25 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.3.4</version>
         <relativePath/>
     </parent>
-
     <groupId>com.gym</groupId>
     <artifactId>gym-crm</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lombok.version>1.18.38</lombok.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <spring-cloud.version>2023.0.3</spring-cloud.version>
+        <!--  Compatible with JUnit Platform 1.10.x / JUnit Jupiter 5.10.x, which is what
+                     spring-boot-starter-parent 3.3.4 manages.  -->
+        <cucumber.version>7.18.1</cucumber.version>
     </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -35,7 +31,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -88,8 +83,7 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- Swagger 2 annotations (@Api, @ApiOperation, @ApiParam, ...) used to document RestController methods -->
+        <!--  Swagger 2 annotations (@Api, @ApiOperation, @ApiParam, ...) used to document RestController methods  -->
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
@@ -100,24 +94,20 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.6.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-activemq</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -128,8 +118,33 @@
             <artifactId>activemq-broker</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--  Cucumber BDD component tests  -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-spring</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!--  Version is managed by spring-boot-starter-parent's dependency-management
+                     (kept in lockstep with the junit-jupiter/junit-platform version it pins).  -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
     <build>
         <finalName>gym-crm</finalName>
         <plugins>
@@ -154,8 +169,18 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
                 <executions>
-                    <execution><goals><goal>prepare-agent</goal></goals></execution>
-                    <execution><id>report</id><phase>test</phase><goals><goal>report</goal></goals></execution>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
