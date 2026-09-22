@@ -81,7 +81,8 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <!-- runtime (was test): needed by the 'standalone' profile, which runs without PostgreSQL -->
+            <scope>runtime</scope>
         </dependency>
         <!--  Swagger 2 annotations (@Api, @ApiOperation, @ApiParam, ...) used to document RestController methods  -->
         <dependency>
